@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartRows, csvCell, formatChange, RANGES, REPORTS, reportCsv, rowsForRange } from "./report";
+import { chartRows, csvCell, formatChange, RANGES, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
 
 describe("rowsForRange", () => {
   it("always adds up to the headline click count", () => {

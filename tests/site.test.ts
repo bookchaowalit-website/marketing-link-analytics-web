@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SITE_URL, PUBLIC_ROUTES, buildRobots, buildSitemap, resolveSiteUrl } from "./site";
+import { DEFAULT_SITE_URL, PUBLIC_ROUTES, buildRobots, buildSitemap, resolveSiteUrl } from "@/lib/site";
+import robots from "@/app/robots";
+import sitemap from "@/app/sitemap";
 
 describe("resolveSiteUrl", () => {
   it("falls back to the default origin when unset or blank", () => {
@@ -27,5 +29,12 @@ describe("sitemap and robots", () => {
     const robots = buildRobots("https://example.test");
     expect(robots.sitemap).toBe("https://example.test/sitemap.xml");
     expect(JSON.stringify(robots.rules).includes("/api/")).toBe(true);
+  });
+});
+
+describe("robots and sitemap routes", () => {
+  it("serve the same data as the lib builders", () => {
+    expect(robots()).toEqual(buildRobots());
+    expect(sitemap()).toEqual(buildSitemap());
   });
 });

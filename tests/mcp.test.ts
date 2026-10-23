@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { handleRpc, TOOL_NAME } from "./mcp";
+import { handleRpc, TOOL_NAME } from "@/lib/mcp";
 
 const app = { name: "Test App", description: "A test", url: "https://example.test" };
 

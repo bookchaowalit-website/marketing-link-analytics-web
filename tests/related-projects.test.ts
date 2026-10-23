@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROJECT_CATEGORIES, projectHost, relatedProjects } from "./related-projects";
+import { PROJECT_CATEGORIES, projectHost, relatedProjects } from "@/lib/related-projects";
 
 describe("relatedProjects", () => {
   it("excludes the current app from every category", () => {
