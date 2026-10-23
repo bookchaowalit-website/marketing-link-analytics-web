@@ -1,46 +1,49 @@
-# bookchaowalit-link-analytics-frontend — Product brief
+# Link Analytics — Product truth
 
-**Slug:** `bookchaowalit-website/bookchaowalit-link-analytics-frontend`  
-**Generated:** 2026-08-11 (bulk Book Dev closeout)  
-**Status:** starter / portfolio boundary
+> Inferred from the code and copy (no user interview). Checked against the portfolio card claims review
+> (`portfolio-site-web/docs/audits/CARD-CLAIMS-REVIEW-2026-10.md`, row `link-analytics`, evidence Live→Prototype:
+> tracking of clicks, referrers, geography, device type and time-of-day patterns was removed) on 2026-10-23.
 
-## Purpose
+## What it is
 
-Portfolio repository under Book Dev. This brief records ownership and the
-current honest status so the nested tree is not an empty shell in the task
-system.
+A read-only report page over hard-coded sample figures for three short links (`/go/github`, `/go/resume`,
+`/go/notes`). The page labels itself "SAMPLE / NO BACKEND CONNECTED".
 
-## Runnable path
+## Who it is for
 
-See `README.md` for install and run instructions when present.
+A portfolio visitor looking at how a small analytics report could read; not someone who needs real numbers.
 
-## Limits
+## What works today
 
-- Not claimed as production-ready unless README and tests prove it.
-- Mobile smoke / emulator acceptance is separate and toolchain-dependent.
+1. Switch the window between 24h, 7d and 30d; KPI cards, chart and table follow.
+2. The link table splits the window's clicks by share (largest remainder), so rows always add up to the headline.
+3. "Chart data as a table" lists every bar's interval and relative volume; each row links to its real destination.
+4. Download the sample table as CSV (cells with commas, quotes or line breaks are quoted).
+5. `/api/mcp` answers JSON-RPC: `get_app_info`, `get_report` (range 24h/7d/30d, default 7d, marked `sample: true`) and
+   `get_report_csv` return the same sample data the page shows; an unknown range, tool or method is a JSON-RPC error.
+6. Front-end and server errors go to Sentry (errors only, personal data stripped) when `NEXT_PUBLIC_SENTRY_DSN` is set.
 
-## Source README excerpt
+## What does not work (and must not be claimed)
 
-```
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+- Nothing is measured: no click tracking, redirect endpoint, referrers, geography, devices or time-of-day data.
+- No link management, account, import or backend.
 
-## Getting Started
+## Live URL and deploy state
 
-First, run the development server:
+- Live: https://link-analytics.bookchaowalit.com (HTTP 200 on 2026-10-23).
+- The Vercel project `bookchaowalit-link-analytics-frontend` is deployed by CLI only. Its Git link names the old
+  repository (`bookchaowalit/bookchaowalit-link-analytics-frontend`), so a push to `main` does not deploy. The last
+  production deploy is the CVE patch (2026-10-23 12:25, CLI, commit da19a2c); later commits (tests, MCP report tools,
+  Sentry, canonical origin and layout fixes) stay undeployed until the owner reconnects Vercel Git (owner action D9).
+- `NEXT_PUBLIC_SENTRY_DSN` is set on the Vercel project (Sentry project `marketing-link-analytics-web`, org
+  `personal-yu0`); it takes effect on the next deploy.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Consolidation note
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This app, `marketing-url-shortener-web` and `marketing-redirect-manager-web` are three client-only views of one idea
+(short path → destination, plus a report). Recommended: merge them into one short-links app (owner decision; nothing
+has been merged or archived). `marketing-linktree-web` is a different job (a link-in-bio page) and stays separate.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Boundaries
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize an
-```
+- Stateless: no storage at all (not even `localStorage`); `/api/mcp` serves only the sample data.
