@@ -38,3 +38,9 @@ describe("robots and sitemap routes", () => {
     expect(sitemap()).toEqual(buildSitemap());
   });
 });
+
+describe("DEFAULT_SITE_URL", () => {
+  it("is the live custom domain, not the old vercel.app host", () => {
+    expect(DEFAULT_SITE_URL).toBe("https://link-analytics.bookchaowalit.com");
+  });
+});
