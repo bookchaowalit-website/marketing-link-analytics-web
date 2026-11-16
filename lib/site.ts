@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 export const DEFAULT_SITE_URL = "https://link-analytics.bookchaowalit.com";
 
 /** Public routes listed in sitemap.xml (keep in sync with app/). */
-export const PUBLIC_ROUTES = ["/","/more-projects"] as const;
+export const PUBLIC_ROUTES = ["/"] as const;
 
 /**
  * Resolve the canonical origin used by metadata, robots.txt, sitemap.xml and the

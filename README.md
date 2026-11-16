@@ -51,4 +51,3 @@ scan on every push and PR to `main`.
 - `lib/site.ts`: canonical URL, robots and sitemap.
 - `lib/sentry.ts` + `instrumentation*.ts`: error reporting to Sentry, errors only, personal data stripped.
 - `app/dashboard-shell.css` + `components/dashboard-shell.tsx`: the copied-in Dashboard shell (`DASHBOARD.md`).
-- `lib/related-projects.ts` + `app/more-projects/page.tsx`: portfolio link page (copied per repository, not a package).
