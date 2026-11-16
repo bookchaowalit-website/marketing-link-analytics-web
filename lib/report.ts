@@ -25,8 +25,8 @@ export type RowWithClicks = LinkRow & { clicks: number };
  * Splits the range total across rows by share using the largest-remainder
  * method, so the table always adds up to the headline click count.
  */
-export function rowsForRange(range: Range, rows: LinkRow[] = ROWS): RowWithClicks[] {
-  const total = REPORTS[range].clicks;
+export function rowsForRange(range: Range, rows: LinkRow[] = ROWS, reports: Record<Range, Report> = REPORTS): RowWithClicks[] {
+  const total = reports[range].clicks;
   const shareSum = rows.reduce((sum, row) => sum + row.share, 0) || 1;
   const exact = rows.map((row) => (total * row.share) / shareSum);
   const floors = exact.map(Math.floor);
@@ -38,6 +38,11 @@ export function rowsForRange(range: Range, rows: LinkRow[] = ROWS): RowWithClick
     remainder -= 1;
   }
   return rows.map((row, index) => ({ ...row, clicks: floors[index] }));
+}
+
+/** True when the period has nothing to chart: no clicks, or every interval at zero. */
+export function hasNoClicks(report: Report): boolean {
+  return report.clicks === 0 || report.bars.every((bar) => bar === 0);
 }
 
 export function formatCount(n: number): string {
@@ -57,9 +62,9 @@ export function csvCell(value: string | number): string {
   return /[",\r\n\u2028\u2029]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export function reportCsv(range: Range): string {
+export function reportCsv(range: Range, rows: LinkRow[] = ROWS, reports: Record<Range, Report> = REPORTS): string {
   const lines = [["short_link", "destination", "clicks", "share_percent", "status", "range"]];
-  for (const row of rowsForRange(range)) lines.push([row.name, row.destination, String(row.clicks), String(row.share), row.status, range]);
+  for (const row of rowsForRange(range, rows, reports)) lines.push([row.name, row.destination, String(row.clicks), String(row.share), row.status, range]);
   return lines.map((line) => line.map(csvCell).join(",")).join("\n") + "\n";
 }
 
@@ -77,8 +82,8 @@ export type ChartRow = { label: string; volume: number };
  * Text alternative for the bar chart: one row per interval, oldest first, with
  * the bar's relative volume (percent of the chart's scale, not a click count).
  */
-export function chartRows(range: Range): ChartRow[] {
-  const bars = REPORTS[range].bars;
+export function chartRows(range: Range, reports: Record<Range, Report> = REPORTS): ChartRow[] {
+  const bars = reports[range].bars;
   const step = RANGE_HOURS[range] / bars.length;
   return bars.map((volume, index) => {
     const from = RANGE_HOURS[range] - index * step;

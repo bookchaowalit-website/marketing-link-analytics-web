@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartRows, csvCell, formatChange, RANGES, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
+import { chartRows, csvCell, formatChange, hasNoClicks, RANGES, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
 
 describe("rowsForRange", () => {
   it("always adds up to the headline click count", () => {
@@ -68,5 +68,13 @@ describe("edge cases", () => {
     expect(csvCell("a\rb")).toBe('"a\rb"');
     expect(csvCell("a\u2028b")).toBe('"a\u2028b"');
     expect(csvCell("plain")).toBe("plain");
+  });
+});
+
+describe("hasNoClicks", () => {
+  it("is true for zero clicks or an all-zero chart, false otherwise", () => {
+    expect(hasNoClicks(REPORTS["7d"])).toBe(false);
+    expect(hasNoClicks({ ...REPORTS["7d"], clicks: 0 })).toBe(true);
+    expect(hasNoClicks({ ...REPORTS["7d"], bars: [0, 0, 0] })).toBe(true);
   });
 });

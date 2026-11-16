@@ -3,6 +3,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
+import { LinkReport } from "@/components/link-report";
+import { REPORTS, ROWS } from "@/lib/report";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -70,5 +72,37 @@ describe("link analytics page", () => {
     expect(created).toHaveBeenCalledOnce();
     expect(clicked).toHaveBeenCalledOnce();
     expect(revoked).toHaveBeenCalledWith("blob:sample");
+  });
+});
+
+describe("link analytics empty states", () => {
+  const zero = { clicks: 0, links: 3, ctr: 0, geo: "TH", change: 0, bars: Array(12).fill(0) };
+  const quiet = { "24h": zero, "7d": zero, "30d": REPORTS["30d"] };
+
+  it("says there are no links instead of showing empty rows", () => {
+    const none = { "24h": { ...zero, links: 0 }, "7d": { ...zero, links: 0 }, "30d": { ...zero, links: 0 } };
+    act(() => root.render(<LinkReport reports={none} rows={[]} />));
+    expect(host.querySelectorAll(".ds-row")).toHaveLength(0);
+    expect(host.querySelector("#links-heading")?.closest("section")?.textContent).toContain("No short links yet");
+    expect(host.textContent).toContain("There are no short links yet, so there is nothing to chart.");
+    expect(host.querySelector(".ds-chart")).toBeNull();
+    expect(button("Download CSV")).toBeUndefined();
+    expect(stats()[1]).toBe("Live links0in the sample set");
+  });
+
+  it("says a period had no clicks instead of drawing a flat chart, and recovers on a busy period", () => {
+    act(() => root.render(<LinkReport reports={quiet} rows={ROWS} />));
+    expect(host.querySelector(".ds-chart")).toBeNull();
+    expect(button("Show table")).toBeUndefined();
+    const statuses = [...host.querySelectorAll('[role="status"]')].map((note) => note.textContent);
+    expect(statuses).toEqual([
+      "No clicks in the last 7 daysYour short links got no clicks in this period, so there is nothing to chart.",
+      "No clicks in the last 7 daysYour short links got no clicks in this period. Try a longer period.",
+    ]);
+    expect(host.querySelectorAll(".ds-row")).toHaveLength(0);
+    expect(stats()[3]).toBe("Top region—no clicks yet");
+    press(button("30 days"));
+    expect(host.querySelector(".ds-chart")).not.toBeNull();
+    expect(host.querySelectorAll(".ds-row")).toHaveLength(3);
   });
 });
