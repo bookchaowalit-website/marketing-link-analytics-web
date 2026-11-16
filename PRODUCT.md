@@ -30,13 +30,10 @@ A portfolio visitor looking at how a small analytics report could read; not some
 
 ## Live URL and deploy state
 
-- Live: https://link-analytics.bookchaowalit.com (HTTP 200 on 2026-10-23).
-- The Vercel project `bookchaowalit-link-analytics-frontend` is deployed by CLI only. Its Git link names the old
-  repository (`bookchaowalit/bookchaowalit-link-analytics-frontend`), so a push to `main` does not deploy. The last
-  production deploy is the CVE patch (2026-10-23 12:25, CLI, commit da19a2c); later commits (tests, MCP report tools,
-  Sentry, canonical origin and layout fixes) stay undeployed until the owner reconnects Vercel Git (owner action D9).
-- `NEXT_PUBLIC_SENTRY_DSN` is set on the Vercel project (Sentry project `marketing-link-analytics-web`, org
-  `personal-yu0`); it takes effect on the next deploy.
+- Live: https://link-analytics.bookchaowalit.com (HTTP 200 on 2026-11-16, Dashboard shell).
+- Vercel Git deploy is connected to `bookchaowalit-website/marketing-link-analytics-web` (owner action D9 is done): a push to `main`
+  deploys. Last production deploy: 2026-11-16, Git, commit b8b0401 (Dashboard shell move), Vercel status success.
+- `NEXT_PUBLIC_SENTRY_DSN` is set on the Vercel project (Sentry project `marketing-link-analytics-web`, org `personal-yu0`).
 
 ## Consolidation note
 
