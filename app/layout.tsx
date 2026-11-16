@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 
+// The font variable sits on <html>: the Dashboard shell tokens live on :root and read it from there.
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Link Analytics | Bookchaowalit",
-  description: "Click stats for short links (sample).",
+  description: "Clicks on three sample short links over 24 hours, 7 days or 30 days: volume, share and a CSV export.",
   keywords: ["link-analytics", "metrics"],
   authors: [{ name: "Bookchaowalit", url: "https://bookchaowalit.com" }],
   creator: "Bookchaowalit",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     title: "Link Analytics | Bookchaowalit",
-    description: "Click stats for short links (sample).",
+    description: "Clicks on three sample short links over 24 hours, 7 days or 30 days: volume, share and a CSV export.",
     siteName: "Bookchaowalit",
   },
   robots: { index: true, follow: true },
@@ -24,17 +24,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {/* THESIS: make sample attention data readable without pretending it is a production dashboard.
-OWN-WORLD: a printed click ledger on warm paper, with rust stamps, blue bars, and marked short-link rows.
-STORY: set a reporting window, read the headline totals, inspect the volume trace, then select one link record.
-FIRST VIEWPORT: the report status, sample boundary, window switcher, and first metrics establish context before detail.
-FORM: ledger rules, report stamps, bar traces, and short-link rows replace generic SaaS chrome.
-SEED: assigned direction 4 · operate mode.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance */}
-        {children}
-      </body>
+    <html lang="en" className={geistSans.variable}>
+      <body>{children}</body>
     </html>
   );
 }

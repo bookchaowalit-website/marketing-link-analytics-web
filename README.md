@@ -1,16 +1,17 @@
-# Link Analytics
+# Link Analytics (dashboard)
 
 A read-only sample click report for a handful of short links: headline figures and a bar chart per window (24h, 7d,
 30d), a link table whose clicks always add up to the headline total, a text table of the chart, and a CSV download.
-Every figure is illustrative sample data written in the code; nothing is tracked or measured.
+Every figure is illustrative sample data written in the code; nothing is tracked or measured. Built on the
+Dashboard shell (see `DASHBOARD.md`).
 
-Live: https://link-analytics.bookchaowalit.com (deployed by Vercel CLI; it can lag `main`, see `PRODUCT.md`).
+Live: https://link-analytics.bookchaowalit.com (Vercel Git deploy: a push to `main` deploys).
 
 ## What it does
 
-- KPI cards (clicks, links, click rate, top region, change) and a 12-bar chart for each window.
+- Stat tiles (clicks with change, links, click rate, top region) and a 12-point volume chart for each window.
 - Link rows split the window's clicks by share with the largest-remainder method, so the table sums to the total.
-- "Chart data as a table" gives a text alternative for the bars; each row links to its real destination.
+- "Show table" gives a text alternative for the chart; selecting a link shows its real destination.
 - Download the sample table as CSV (spreadsheet-safe quoting).
 - `/api/mcp` serves the same sample report (`get_report`, `get_report_csv`) plus `get_app_info`.
 
@@ -28,7 +29,7 @@ npm run dev
 ## Checks
 
 ```bash
-npm test           # Vitest: report maths and CSV, MCP handler + route, site/robots/sitemap, home render, Sentry
+npm test           # Vitest: report maths and CSV, MCP handler + route, site/robots/sitemap, mounted home page tests, the Dashboard shell, Sentry
 npm run lint
 npm run typecheck
 npm run build
@@ -49,4 +50,5 @@ scan on every push and PR to `main`.
 - `lib/mcp.ts` + `app/api/mcp/route.ts`: JSON-RPC endpoint; `get_report` and `get_report_csv` read `lib/report.ts`.
 - `lib/site.ts`: canonical URL, robots and sitemap.
 - `lib/sentry.ts` + `instrumentation*.ts`: error reporting to Sentry, errors only, personal data stripped.
+- `app/dashboard-shell.css` + `components/dashboard-shell.tsx`: the copied-in Dashboard shell (`DASHBOARD.md`).
 - `lib/related-projects.ts` + `app/more-projects/page.tsx`: portfolio link page (copied per repository, not a package).
