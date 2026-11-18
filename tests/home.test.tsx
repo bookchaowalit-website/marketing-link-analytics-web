@@ -48,8 +48,10 @@ describe("link analytics page", () => {
     press(button("30 days"));
     expect(stats()[0]).toBe("Clicks31,840+22.4% on the period before");
     expect([...host.querySelectorAll(".ds-chart-x span")].map((span) => span.textContent)).toEqual(["−30d", "now"]);
-    press(button("Show table"));
-    const rows = host.querySelectorAll("tbody tr");
+    const details = host.querySelector("details.ds-chart-switch") as HTMLDetailsElement;
+    press(details.querySelector("summary") as HTMLElement);
+    expect(details.open).toBe(true);
+    const rows = details.querySelectorAll("tbody tr");
     expect(rows).toHaveLength(12);
     expect(rows[11].textContent).toBe("−2.5d to now96 (peak)");
   });
@@ -105,7 +107,7 @@ describe("link analytics empty states", () => {
   it("says a period had no clicks instead of drawing a flat chart, and recovers on a busy period", () => {
     act(() => root.render(<LinkReport reports={quiet} rows={ROWS} />));
     expect(host.querySelector(".ds-chart")).toBeNull();
-    expect(button("Show table")).toBeUndefined();
+    expect(host.querySelector("details.ds-chart-switch")).toBeNull();
     const statuses = [...host.querySelectorAll('[role="status"]')].map((note) => note.textContent);
     expect(statuses).toEqual([
       "No clicks in the last 7 daysYour short links got no clicks in this period, so there is nothing to chart.",
