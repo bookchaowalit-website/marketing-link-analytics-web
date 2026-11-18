@@ -34,6 +34,8 @@ describe("link analytics page", () => {
     expect(stats()).toEqual(["Clicks8,420+14.8% on the period before", "Live links24in the sample set", "Click rate3.4%estimated", "Top regionTHby clicks"]);
     expect(host.querySelector(".ds-pill")?.textContent).toBe("Sample data");
     expect(host.textContent).toContain("No backend is connected");
+    // The chart's text names the low and high intervals it draws, not only the count and trend.
+    expect(host.querySelector("svg")?.getAttribute("aria-label")).toBe("Illustrative click volume for the last 7 days, 12 intervals: lowest 32 (−7d to −6.4d), highest 92 (−14h to now); trending +14.8%.");
   });
 
   it("splits the clicks across the links so they add up to the headline", () => {
@@ -88,6 +90,16 @@ describe("link analytics empty states", () => {
     expect(host.querySelector(".ds-chart")).toBeNull();
     expect(button("Download CSV")).toBeUndefined();
     expect(stats()[1]).toBe("Live links0in the sample set");
+  });
+
+  it("keeps the links and top region when clicks exist but the chart has no interval data", () => {
+    const flat = { ...REPORTS, "7d": { ...REPORTS["7d"], bars: [0, 0, 0] } };
+    act(() => root.render(<LinkReport reports={flat} rows={ROWS} />));
+    expect(host.querySelector(".ds-chart")).toBeNull();
+    expect(host.querySelector("#volume-heading")?.closest("section")?.textContent).toContain("No interval data for the last 7 days8,420 clicks were counted, but not split by interval, so there is nothing to chart.");
+    expect(host.textContent).not.toContain("No clicks in the last");
+    expect(host.querySelectorAll(".ds-row")).toHaveLength(3);
+    expect(stats()[3]).toBe("Top regionTHby clicks");
   });
 
   it("says a period had no clicks instead of drawing a flat chart, and recovers on a busy period", () => {

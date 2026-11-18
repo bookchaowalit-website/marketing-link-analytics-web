@@ -40,9 +40,14 @@ export function rowsForRange(range: Range, rows: LinkRow[] = ROWS, reports: Reco
   return rows.map((row, index) => ({ ...row, clicks: floors[index] }));
 }
 
-/** True when the period has nothing to chart: no clicks, or every interval at zero. */
+/** True when the period got no clicks at all; the links, top region and chart then say so. */
 export function hasNoClicks(report: Report): boolean {
-  return report.clicks === 0 || report.bars.every((bar) => bar === 0);
+  return report.clicks === 0;
+}
+
+/** True when there is nothing to draw: no intervals, or every interval at zero. Clicks may still be above 0. */
+export function hasNoChartData(report: Report): boolean {
+  return report.bars.every((bar) => bar === 0);
 }
 
 export function formatCount(n: number): string {
@@ -89,4 +94,12 @@ export function chartRows(range: Range, reports: Record<Range, Report> = REPORTS
     const from = RANGE_HOURS[range] - index * step;
     return { label: `${formatAgo(from)} to ${formatAgo(from - step)}`, volume };
   });
+}
+
+/** The quietest and busiest intervals (first one on a tie), for the chart's text summary; null with no intervals. */
+export function chartExtremes(range: Range, reports: Record<Range, Report> = REPORTS): { low: ChartRow; high: ChartRow } | null {
+  const rows = chartRows(range, reports);
+  if (rows.length === 0) return null;
+  const pick = (better: (a: number, b: number) => boolean) => rows.reduce((best, row) => (better(row.volume, best.volume) ? row : best));
+  return { low: pick((a, b) => a < b), high: pick((a, b) => a > b) };
 }

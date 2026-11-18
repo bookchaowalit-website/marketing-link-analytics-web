@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartRows, csvCell, formatChange, hasNoClicks, RANGES, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
+import { chartExtremes, chartRows, csvCell, formatChange, hasNoChartData, hasNoClicks, RANGES, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
 
 describe("rowsForRange", () => {
   it("always adds up to the headline click count", () => {
@@ -71,10 +71,23 @@ describe("edge cases", () => {
   });
 });
 
-describe("hasNoClicks", () => {
-  it("is true for zero clicks or an all-zero chart, false otherwise", () => {
+describe("hasNoClicks and hasNoChartData", () => {
+  it("keeps zero clicks apart from an empty or all-zero chart", () => {
     expect(hasNoClicks(REPORTS["7d"])).toBe(false);
     expect(hasNoClicks({ ...REPORTS["7d"], clicks: 0 })).toBe(true);
-    expect(hasNoClicks({ ...REPORTS["7d"], bars: [0, 0, 0] })).toBe(true);
+    // Clicks counted but no interval split: not "no clicks", only nothing to chart.
+    expect(hasNoClicks({ ...REPORTS["7d"], bars: [0, 0, 0] })).toBe(false);
+    expect(hasNoChartData({ ...REPORTS["7d"], bars: [0, 0, 0] })).toBe(true);
+    expect(hasNoChartData({ ...REPORTS["7d"], bars: [] })).toBe(true);
+    expect(hasNoChartData(REPORTS["7d"])).toBe(false);
+  });
+});
+
+describe("chartExtremes", () => {
+  it("names the quietest and busiest intervals, first one on a tie, and null with no intervals", () => {
+    expect(chartExtremes("7d")).toEqual({ low: { label: "−7d to −6.4d", volume: 32 }, high: { label: "−14h to now", volume: 92 } });
+    const tie = { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [5, 9, 5, 9] } };
+    expect(chartExtremes("24h", tie)).toEqual({ low: { label: "−24h to −18h", volume: 5 }, high: { label: "−18h to −12h", volume: 9 } });
+    expect(chartExtremes("24h", { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [] } })).toBeNull();
   });
 });

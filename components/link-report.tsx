@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChartPanel, DashFoot, DashTop, Pill, Segmented, Stat } from "@/components/dashboard-shell";
-import { AXIS_START, chartRows, formatChange, formatCount, hasNoClicks, RANGES, reportCsv, rowsForRange, type LinkRow, type Range, type Report } from "@/lib/report";
+import { AXIS_START, chartExtremes, chartRows, formatChange, formatCount, hasNoChartData, hasNoClicks, RANGES, reportCsv, rowsForRange, type LinkRow, type Range, type Report } from "@/lib/report";
 
 const RANGE_LABELS: Record<Range, string> = { "24h": "24 hours", "7d": "7 days", "30d": "30 days" };
 const PERIODS = RANGES.map((id) => ({ id, label: RANGE_LABELS[id] }));
@@ -18,6 +18,9 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
   const period = RANGE_LABELS[range];
   const noLinks = links.length === 0;
   const noClicks = hasNoClicks(report);
+  const noChart = noClicks || hasNoChartData(report);
+  const extremes = chartExtremes(range, reports);
+  const extremesText = extremes ? `: lowest ${extremes.low.volume} (${extremes.low.label}), highest ${extremes.high.volume} (${extremes.high.label})` : "";
 
   const downloadCsv = () => {
     const url = URL.createObjectURL(new Blob([reportCsv(range, links, reports)], { type: "text/csv" }));
@@ -50,7 +53,7 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
         </ul>
 
         <div className="ds-grid">
-          {noClicks ? (
+          {noChart ? (
             <section className="ds-panel" aria-labelledby="volume-heading">
               <div className="ds-panel-head">
                 <div>
@@ -58,16 +61,23 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
                   <p>Last {period}</p>
                 </div>
               </div>
-              <p className="ds-callout" role="status">
-                <strong>No clicks in the last {period}</strong>
-                <span>{noLinks ? "There are no short links yet, so there is nothing to chart." : "Your short links got no clicks in this period, so there is nothing to chart."}</span>
-              </p>
+              {noClicks ? (
+                <p className="ds-callout" role="status">
+                  <strong>No clicks in the last {period}</strong>
+                  <span>{noLinks ? "There are no short links yet, so there is nothing to chart." : "Your short links got no clicks in this period, so there is nothing to chart."}</span>
+                </p>
+              ) : (
+                <p className="ds-callout" role="status">
+                  <strong>No interval data for the last {period}</strong>
+                  <span>{formatCount(report.clicks)} clicks were counted, but not split by interval, so there is nothing to chart.</span>
+                </p>
+              )}
             </section>
           ) : (
             <ChartPanel
               title="Click volume"
               subtitle={`Last ${period}, relative volume on a 0–100 scale`}
-              summary={`Illustrative click volume for the last ${period}, ${report.bars.length} intervals, trending ${formatChange(report.change)}.`}
+              summary={`Illustrative click volume for the last ${period}, ${report.bars.length} intervals${extremesText}; trending ${formatChange(report.change)}.`}
               values={report.bars}
               labels={intervals.map((row) => row.label)}
               ticks={[0, report.bars.length - 1]}
