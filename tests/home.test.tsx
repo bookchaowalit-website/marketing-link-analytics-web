@@ -51,7 +51,7 @@ describe("link analytics page", () => {
     const details = host.querySelector("details.ds-chart-switch") as HTMLDetailsElement;
     press(details.querySelector("summary") as HTMLElement);
     expect(details.open).toBe(true);
-    const rows = details.querySelectorAll("tbody tr");
+    const rows = host.querySelectorAll("tbody tr");
     expect(rows).toHaveLength(12);
     expect(rows[11].textContent).toBe("−2.5d to now96 (peak)");
   });
