@@ -21,6 +21,26 @@ describe("rowsForRange", () => {
     ]);
     expect(rows.map((row) => row.clicks).sort()).toEqual([401, 401, 402]);
   });
+
+  it("gives each row the share of the clicks it was actually given, adding up to 100", () => {
+    // Only one link passed: it gets every click, so it is 100% of them, not its sample weight of 48%.
+    const one = rowsForRange("7d", [{ name: "/go/github", destination: "x", share: 48, status: "active" }]);
+    expect(one.map((row) => [row.clicks, row.share])).toEqual([[8420, 100]]);
+    expect(reportCsv("7d", [{ name: "/go/github", destination: "x", share: 48, status: "active" }]).split("\n")[1]).toBe("/go/github,x,8420,100,active,7d");
+    // Two of three links: their percentages follow the clicks and still add up to 100.
+    const two = rowsForRange("7d", [
+      { name: "a", destination: "x", share: 48, status: "active" },
+      { name: "b", destination: "x", share: 37, status: "active" },
+    ]);
+    expect(two.map((row) => row.share)).toEqual([56, 44]);
+    expect(two.reduce((sum, row) => sum + row.share, 0)).toBe(100);
+    // The full sample keeps its 48 / 37 / 15 split.
+    for (const range of RANGES) expect(rowsForRange(range).map((row) => row.share)).toEqual([48, 37, 15]);
+    // No clicks: the weights, normalised to 100; no rows: nothing.
+    const quiet = { ...REPORTS, "24h": { ...REPORTS["24h"], clicks: 0 } };
+    expect(rowsForRange("24h", [{ name: "a", destination: "x", share: 3, status: "active" }, { name: "b", destination: "x", share: 1, status: "quiet" }], quiet).map((row) => row.share)).toEqual([75, 25]);
+    expect(rowsForRange("7d", [])).toEqual([]);
+  });
 });
 
 describe("formatting", () => {

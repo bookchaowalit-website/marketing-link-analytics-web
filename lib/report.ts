@@ -19,16 +19,13 @@ export const ROWS: LinkRow[] = [
 
 export const AXIS_START: Record<Range, string> = { "24h": "−24h", "7d": "−7d", "30d": "−30d" };
 
+/** `share` here is the percent of the clicks actually given to this row (whole numbers that add up to 100). */
 export type RowWithClicks = LinkRow & { clicks: number };
 
-/**
- * Splits the range total across rows by share using the largest-remainder
- * method, so the table always adds up to the headline click count.
- */
-export function rowsForRange(range: Range, rows: LinkRow[] = ROWS, reports: Record<Range, Report> = REPORTS): RowWithClicks[] {
-  const total = reports[range].clicks;
-  const shareSum = rows.reduce((sum, row) => sum + row.share, 0) || 1;
-  const exact = rows.map((row) => (total * row.share) / shareSum);
+/** Splits `total` across `weights` into whole numbers (largest-remainder method), so they add up to `total`. */
+function splitWhole(total: number, weights: number[]): number[] {
+  const weightSum = weights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const exact = weights.map((weight) => (total * weight) / weightSum);
   const floors = exact.map(Math.floor);
   let remainder = total - floors.reduce((sum, n) => sum + n, 0);
   const order = exact.map((value, index) => ({ index, frac: value - floors[index] })).sort((a, b) => b.frac - a.frac);
@@ -37,7 +34,20 @@ export function rowsForRange(range: Range, rows: LinkRow[] = ROWS, reports: Reco
     floors[index] += 1;
     remainder -= 1;
   }
-  return rows.map((row, index) => ({ ...row, clicks: floors[index] }));
+  return floors;
+}
+
+/**
+ * Splits the range total across rows by share using the largest-remainder
+ * method, so the table always adds up to the headline click count. Each row's
+ * `share` is then recomputed from the clicks it was given, over the rows shown,
+ * so the listed percentages add up to 100 even when only some links are passed.
+ */
+export function rowsForRange(range: Range, rows: LinkRow[] = ROWS, reports: Record<Range, Report> = REPORTS): RowWithClicks[] {
+  const clicks = splitWhole(reports[range].clicks, rows.map((row) => row.share));
+  // With no clicks there is nothing to divide, so the rows keep their sample weights, normalised to 100.
+  const shares = splitWhole(rows.length ? 100 : 0, clicks.some((n) => n > 0) ? clicks : rows.map((row) => row.share));
+  return rows.map((row, index) => ({ ...row, clicks: clicks[index], share: shares[index] }));
 }
 
 /** True when the period got no clicks at all; the links, top region and chart then say so. */
