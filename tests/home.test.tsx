@@ -48,6 +48,10 @@ describe("link analytics page", () => {
     press(button("30 days"));
     expect(stats()[0]).toBe("Clicks31,840+22.4% on the period before");
     expect([...host.querySelectorAll(".ds-chart-x span")].map((span) => span.textContent)).toEqual(["−30d", "now"]);
+    // 12 intervals: the last point (−2.5d to now) sits at its interval's centre, not on "now".
+    const last = (host.querySelector(".ds-chart-line")?.getAttribute("points") ?? "").split(" ").at(-1);
+    expect(Number(last?.split(",")[0])).toBeCloseTo((11.5 / 12) * 1000);
+    expect([...host.querySelectorAll<HTMLElement>(".ds-chart-x span")].map((span) => span.style.left)).toEqual(["0%", "100%"]);
     const details = host.querySelector("details.ds-chart-switch") as HTMLDetailsElement;
     press(details.querySelector("summary") as HTMLElement);
     expect(details.open).toBe(true);

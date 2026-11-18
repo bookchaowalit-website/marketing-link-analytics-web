@@ -80,8 +80,10 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
               summary={`Illustrative click volume for the last ${period}, ${report.bars.length} intervals${extremesText}; trending ${formatChange(report.change)}.`}
               values={report.bars}
               labels={intervals.map((row) => row.label)}
-              ticks={[0, report.bars.length - 1]}
+              // Each bar counts one interval, so its point sits at the interval's centre; "−7d" and "now" mark the edges.
+              ticks={[0, report.bars.length]}
               tickLabels={[AXIS_START[range], "now"]}
+              buckets
               max={100}
               unit="Relative volume, %"
               labelHeading="Interval"
