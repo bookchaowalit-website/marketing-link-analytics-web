@@ -51,6 +51,16 @@ describe("MCP route", () => {
     expect(report.rows).toEqual(rowsForRange("30d"));
   });
 
+  it("keeps the links field in get_report for every range, equal to the number of short links shown", async () => {
+    for (const range of ["24h", "7d", "30d"] as const) {
+      const body = await (await rpc({ jsonrpc: "2.0", id: range, method: "tools/call", params: { name: "get_report", arguments: { range } } })).json();
+      const report = JSON.parse(body.result.content[0].text);
+      expect(typeof report.links).toBe("number");
+      expect(report.links).toBe(report.rows.length);
+      expect(report.links).toBe(3);
+    }
+  });
+
   it("get_report defaults to the 7d window and rejects an unknown range", async () => {
     const ok = await (await rpc({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "get_report" } })).json();
     expect(JSON.parse(ok.result.content[0].text).range).toBe("7d");

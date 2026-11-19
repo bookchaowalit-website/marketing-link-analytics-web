@@ -55,46 +55,9 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
           <Stat label="Top region" value={noClicks ? "—" : regionName(report.geo)} note={noClicks ? "no clicks yet" : `${report.geo.toUpperCase()} · by clicks`} />
         </ul>
 
-        <div className="ds-grid">
-          {noChart ? (
-            <section className="ds-panel" aria-labelledby="volume-heading">
-              <div className="ds-panel-head">
-                <div>
-                  <h2 id="volume-heading">Click volume</h2>
-                  <p>Last {period}</p>
-                </div>
-              </div>
-              {noClicks ? (
-                <p className="ds-callout" role="status">
-                  <strong>No clicks in the last {period}</strong>
-                  <span>{noLinks ? "There are no short links yet, so there is nothing to chart." : "Your short links got no clicks in this period, so there is nothing to chart."}</span>
-                </p>
-              ) : (
-                <p className="ds-callout" role="status">
-                  <strong>No interval data for the last {period}</strong>
-                  <span>{formatCount(report.clicks)} clicks were counted, but not split by interval, so there is nothing to chart.</span>
-                </p>
-              )}
-            </section>
-          ) : (
-            <ChartPanel
-              title="Click volume"
-              subtitle={`Last ${period} · clicks per interval, ${formatCount(report.clicks)} in all`}
-              summary={`Illustrative clicks for the last ${period}, ${intervals.length} intervals${extremesText}; trending ${formatChange(report.change)}.`}
-              values={intervals.map((row) => row.clicks)}
-              labels={intervals.map((row) => row.label)}
-              // Each point counts one interval, so it sits at the interval's centre; the ticks mark interval edges.
-              ticks={axis.ticks}
-              tickLabels={axis.labels}
-              buckets
-              max={Math.max(...intervals.map((row) => row.clicks))}
-              unit="Clicks"
-              yUnit="clicks"
-              labelHeading="Interval"
-            />
-          )}
-
-          <section className="ds-panel ds-phone-first" aria-labelledby="links-heading">
+        {/* The links come first in the DOM, so they lead on phones and in Tab order; on wide screens they take the narrow column. */}
+        <div className="ds-grid ds-grid-narrow-first">
+          <section className="ds-panel" aria-labelledby="links-heading">
             <div className="ds-panel-head">
               <div>
                 <h2 id="links-heading">Short links</h2>
@@ -142,6 +105,44 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
               </>
             )}
           </section>
+
+          {noChart ? (
+            <section className="ds-panel" aria-labelledby="volume-heading">
+              <div className="ds-panel-head">
+                <div>
+                  <h2 id="volume-heading">Click volume</h2>
+                  <p>Last {period}</p>
+                </div>
+              </div>
+              {noClicks ? (
+                <p className="ds-callout" role="status">
+                  <strong>No clicks in the last {period}</strong>
+                  <span>{noLinks ? "There are no short links yet, so there is nothing to chart." : "Your short links got no clicks in this period, so there is nothing to chart."}</span>
+                </p>
+              ) : (
+                <p className="ds-callout" role="status">
+                  <strong>No interval data for the last {period}</strong>
+                  <span>{formatCount(report.clicks)} clicks were counted, but not split by interval, so there is nothing to chart.</span>
+                </p>
+              )}
+            </section>
+          ) : (
+            <ChartPanel
+              title="Click volume"
+              subtitle={`Last ${period} · clicks per interval, ${formatCount(report.clicks)} in all`}
+              summary={`Illustrative clicks for the last ${period}, ${intervals.length} intervals${extremesText}; trending ${formatChange(report.change)}.`}
+              values={intervals.map((row) => row.clicks)}
+              labels={intervals.map((row) => row.label)}
+              // Each point counts one interval, so it sits at the interval's centre; the ticks mark interval edges.
+              ticks={axis.ticks}
+              tickLabels={axis.labels}
+              buckets
+              max={Math.max(...intervals.map((row) => row.clicks))}
+              unit="Clicks"
+              yUnit="clicks"
+              labelHeading="Interval"
+            />
+          )}
         </div>
 
         <p className="ds-note">All figures are illustrative and stay in this browser view. No backend is connected, and no click is sent or stored from this page.</p>

@@ -22,12 +22,14 @@ function rangeOf(args: Record<string, unknown>): Range | { error: string } {
 const TOOLS: DataTool[] = [
   {
     name: "get_report",
-    description: "Sample click report for a range (24h, 7d, 30d): headline figures and per-link rows. Illustrative data, not measured.",
+    description: "Sample click report for a range (24h, 7d, 30d): headline figures (clicks, links = number of short links, ctr, geo, change, bars) and per-link rows. Illustrative data, not measured.",
     inputSchema: rangeSchema,
     call: (args) => {
       const range = rangeOf(args);
       if (typeof range !== "string") return range;
-      return JSON.stringify({ range, sample: true, ...REPORTS[range], rows: rowsForRange(range) });
+      const rows = rowsForRange(range);
+      // `links` stays in the result (clients read it): the number of short links in the report, as the page's tile shows.
+      return JSON.stringify({ range, sample: true, ...REPORTS[range], links: rows.length, rows });
     },
   },
   {

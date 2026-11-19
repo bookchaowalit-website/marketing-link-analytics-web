@@ -42,8 +42,9 @@ describe("link analytics page", () => {
     expect(host.querySelector(".ds-chart-unit")?.textContent).toBe("clicks");
     expect(host.querySelector(".ds-chart-peak-row")?.textContent).toBe("Peak 1064 clicks · −14h to now");
     expect(host.querySelector(".ds-chart-panel")?.textContent).toContain("Last 7 days · clicks per interval, 8,420 in all");
-    // The links the visitor picks from come first when the grid is one column.
-    expect(host.querySelector(".ds-grid > .ds-phone-first #links-heading")).not.toBeNull();
+    // The links the visitor picks from come first in the DOM (so on phones and in Tab order), in the narrow column on wide screens.
+    expect(host.querySelector(".ds-grid.ds-grid-narrow-first > section:first-child #links-heading")).not.toBeNull();
+    expect(host.querySelector(".ds-phone-first")).toBeNull();
   });
 
   it("splits the clicks across the links so they add up to the headline", () => {
@@ -131,9 +132,10 @@ describe("link analytics empty states", () => {
     expect(host.querySelector(".ds-chart")).toBeNull();
     expect(host.querySelector("details.ds-chart-switch")).toBeNull();
     const statuses = [...host.querySelectorAll('[role="status"]')].map((note) => note.textContent);
+    // DOM order: the links panel first, then the chart panel.
     expect(statuses).toEqual([
-      "No clicks in the last 7 daysYour short links got no clicks in this period, so there is nothing to chart.",
       "No clicks in the last 7 daysYour short links got no clicks in this period. Try a longer period.",
+      "No clicks in the last 7 daysYour short links got no clicks in this period, so there is nothing to chart.",
     ]);
     expect(host.querySelectorAll(".ds-row")).toHaveLength(0);
     expect(stats()[3]).toBe("Top region—no clicks yet");
