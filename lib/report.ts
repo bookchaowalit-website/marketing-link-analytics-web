@@ -62,6 +62,18 @@ export const REPORTS: Record<Range, Report> = {
 };
 
 /**
+ * MCP `get_report.bars`: always 12 values on the 0-100 weight scale clients had before the shared sample, whatever
+ * interval layout the chart uses (the period's hours in 12 equal slices, each relative to the busiest slice).
+ * The chart's own buckets, as clicks, are in `intervals`.
+ */
+export function mcpBars(range: Range): number[] {
+  const hours = RANGE_HOURS[range];
+  const window = sampleWindow(hours);
+  const step = hours / 12;
+  return relativeBars(Array.from({ length: 12 }, (_, i) => sum(window.slice(i * step, (i + 1) * step))));
+}
+
+/**
  * `bars` on the 0-100 scale MCP clients had before the shared sample (each interval relative to the busiest one),
  * so a client that draws them as heights keeps working; the clicks themselves are in `intervals`.
  */

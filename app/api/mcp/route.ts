@@ -1,5 +1,5 @@
 import { handleRpc, type DataTool } from "@/lib/mcp";
-import { RANGES, REPORTS, chartRows, relativeBars, reportCsv, rowsForRange, type Range } from "@/lib/report";
+import { RANGES, REPORTS, chartRows, mcpBars, reportCsv, rowsForRange, type Range } from "@/lib/report";
 import { SITE_URL } from "@/lib/site";
 
 export const runtime = "edge";
@@ -22,7 +22,7 @@ function rangeOf(args: Record<string, unknown>): Range | { error: string } {
 const TOOLS: DataTool[] = [
   {
     name: "get_report",
-    description: "Sample click report for a range (24h, 7d, 30d): headline figures (clicks, links = number of short links, ctr, geo, change = percent on the period of the same length before, bars = relative interval heights on a 0-100 scale), intervals = whole clicks per interval with time labels (24h: 12 two-hour, 7d: 7 daily, 30d: 10 three-day), and per-link rows. Every range is cut from one illustrative sample, so nested ranges agree; not measured.",
+    description: "Sample click report for a range (24h, 7d, 30d): headline figures (clicks, links = number of short links, ctr, geo, change = percent on the period of the same length before, bars = 12 relative heights on a 0-100 scale, always 12 per range), intervals = the chart's buckets as whole clicks with time labels (24h: 12 two-hour, 7d: 7 daily, 30d: 10 three-day), and per-link rows. Every range is cut from one illustrative sample, so nested ranges agree; not measured.",
     inputSchema: rangeSchema,
     call: (args) => {
       const range = rangeOf(args);
@@ -30,7 +30,7 @@ const TOOLS: DataTool[] = [
       const rows = rowsForRange(range);
       // `links` stays in the result (clients read it): the number of short links in the report, as the page's tile shows.
       const report = REPORTS[range];
-      return JSON.stringify({ range, sample: true, ...report, bars: relativeBars(report.bars), links: rows.length, intervals: chartRows(range), rows });
+      return JSON.stringify({ range, sample: true, ...report, bars: mcpBars(range), links: rows.length, intervals: chartRows(range), rows });
     },
   },
   {

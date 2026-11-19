@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handleRpc, TOOL_NAME } from "@/lib/mcp";
 import { POST } from "@/app/api/mcp/route";
-import { REPORTS, chartRows, relativeBars, reportCsv, rowsForRange } from "@/lib/report";
+import { REPORTS, chartRows, mcpBars, reportCsv, rowsForRange } from "@/lib/report";
 
 const app = { name: "Test App", description: "A test", url: "https://example.test" };
 
@@ -51,9 +51,21 @@ describe("MCP route", () => {
     expect(report.rows).toEqual(rowsForRange("30d"));
     expect(report.intervals).toEqual(chartRows("30d"));
     // bars keep the 0-100 relative scale older clients draw as heights; the clicks are in intervals.
-    expect(report.bars).toEqual(relativeBars(REPORTS["30d"].bars));
+    expect(report.bars).toEqual(mcpBars("30d"));
     expect(Math.max(...report.bars)).toBe(100);
     expect(report.change).toBe(REPORTS["30d"].change);
+  });
+
+  it("get_report.bars is always 12 values on the 0-100 scale; intervals follow the chart's buckets", async () => {
+    for (const [range, buckets] of [["24h", 12], ["7d", 7], ["30d", 10]] as const) {
+      const body = await (await rpc({ jsonrpc: "2.0", id: range, method: "tools/call", params: { name: "get_report", arguments: { range } } })).json();
+      const report = JSON.parse(body.result.content[0].text);
+      expect(report.bars.length).toBe(12);
+      for (const bar of report.bars) expect(bar >= 0 && bar <= 100 && Number.isInteger(bar)).toBe(true);
+      expect(Math.max(...report.bars)).toBe(100);
+      expect(report.intervals).toHaveLength(buckets);
+      expect(report.intervals.reduce((total: number, row: { clicks: number }) => total + row.clicks, 0)).toBe(report.clicks);
+    }
   });
 
   it("keeps the links field in get_report for every range, equal to the number of short links shown", async () => {
