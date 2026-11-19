@@ -1,5 +1,5 @@
 import { handleRpc, type DataTool } from "@/lib/mcp";
-import { RANGES, REPORTS, reportCsv, rowsForRange, type Range } from "@/lib/report";
+import { RANGES, REPORTS, chartRows, reportCsv, rowsForRange, type Range } from "@/lib/report";
 import { SITE_URL } from "@/lib/site";
 
 export const runtime = "edge";
@@ -22,14 +22,14 @@ function rangeOf(args: Record<string, unknown>): Range | { error: string } {
 const TOOLS: DataTool[] = [
   {
     name: "get_report",
-    description: "Sample click report for a range (24h, 7d, 30d): headline figures (clicks, links = number of short links, ctr, geo, change, bars) and per-link rows. Illustrative data, not measured.",
+    description: "Sample click report for a range (24h, 7d, 30d): headline figures (clicks, links = number of short links, ctr, geo, change, bars = relative weights), intervals = whole clicks per interval as the chart shows them, and per-link rows. Illustrative data, not measured.",
     inputSchema: rangeSchema,
     call: (args) => {
       const range = rangeOf(args);
       if (typeof range !== "string") return range;
       const rows = rowsForRange(range);
       // `links` stays in the result (clients read it): the number of short links in the report, as the page's tile shows.
-      return JSON.stringify({ range, sample: true, ...REPORTS[range], links: rows.length, rows });
+      return JSON.stringify({ range, sample: true, ...REPORTS[range], links: rows.length, intervals: chartRows(range), rows });
     },
   },
   {
