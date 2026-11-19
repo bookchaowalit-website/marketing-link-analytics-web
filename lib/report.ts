@@ -9,35 +9,66 @@ export type Report = { clicks: number; ctr: number; geo: string; change: number;
 export type LinkRow = { name: string; destination: string; share: number; status: "active" | "quiet" };
 
 /**
- * One illustrative sample (nothing here is measured): clicks per day for the last 30 days, oldest first, each day
- * split into 24 hours by a fixed daily profile. Every period is cut from these same hours, so nested periods agree:
- * the last 24 hours are the last day, the 7 days hold that day, and the 30 days hold both.
+ * One illustrative sample (nothing here is measured): clicks per day for the last 60 days, oldest first, each day
+ * split into 24 hours by a fixed daily profile. Every period is cut from these same hours, so nested periods agree
+ * (the last 24 hours are the last day, the 7 days hold it, the 30 days hold both), and `change` compares a period
+ * with the period of the same length just before it.
  */
 const SAMPLE_DAYS = [
+  // The 30 days before the current month (only used for the 30-day change).
+  760, 765, 770, 776, 781, 786, 791, 797, 802, 807, 812, 818, 823, 828, 833, 839, 844, 849, 854, 860, 865, 870, 875,
+  881, 886, 891, 896, 902, 907, 912,
+  // The current 30 days.
   900, 910, 921, 931, 942, 952, 963, 973, 984, 994, 1005, 1015, 1026, 1036, 1047, 1057, 1068, 1078, 1089, 1099, 1110,
   1120, 1200, 1150, 1180, 1190, 1230, 1210, 1256, 1204,
 ];
 const HOUR_PROFILE = [2, 1, 1, 1, 1, 2, 3, 5, 6, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 4, 4, 3, 2];
 const SAMPLE_HOURS = SAMPLE_DAYS.flatMap((day) => splitWhole(day, HOUR_PROFILE));
 
-/** The last `hours` of the sample in 12 equal intervals, as whole clicks per interval (oldest first). */
-function sampleBars(hours: number): number[] {
-  const window = SAMPLE_HOURS.slice(-hours);
-  const step = hours / 12;
-  return Array.from({ length: 12 }, (_, i) => window.slice(i * step, (i + 1) * step).reduce((sum, n) => sum + n, 0));
+/**
+ * Interval layout per period, on whole days where the period is days long (so the chart follows days, not a
+ * saw-tooth of day and night halves): 24 hours in 12 two-hour bars, 7 days in 7 daily bars, 30 days in 10 three-day bars.
+ */
+export const RANGE_HOURS: Record<Range, number> = { "24h": 24, "7d": 168, "30d": 720 };
+export const RANGE_BARS: Record<Range, number> = { "24h": 12, "7d": 7, "30d": 10 };
+
+const sum = (values: number[]) => values.reduce((total, n) => total + n, 0);
+
+/** Hours `[end - hours, end)` of the sample, where `end` counts back from now (0 = now). */
+function sampleWindow(hours: number, end = 0): number[] {
+  return SAMPLE_HOURS.slice(SAMPLE_HOURS.length - end - hours, SAMPLE_HOURS.length - end);
 }
 
-function sampleReport(hours: number, rest: Omit<Report, "clicks" | "bars">): Report {
-  const bars = sampleBars(hours);
-  return { ...rest, clicks: bars.reduce((sum, n) => sum + n, 0), bars };
+/** Percent change of `current` on `previous`; NaN (shown as "—") when there is nothing to compare with. */
+export function percentChange(current: number, previous: number): number {
+  return previous > 0 ? Number((((current - previous) / previous) * 100).toFixed(1)) : Number.NaN;
+}
+
+function sampleReport(range: Range, rest: Omit<Report, "clicks" | "bars" | "change">): Report {
+  const hours = RANGE_HOURS[range];
+  const count = RANGE_BARS[range];
+  const window = sampleWindow(hours);
+  const step = hours / count;
+  const bars = Array.from({ length: count }, (_, i) => sum(window.slice(i * step, (i + 1) * step)));
+  const clicks = sum(bars);
+  return { ...rest, clicks, change: percentChange(clicks, sum(sampleWindow(hours, hours))), bars };
 }
 
 /** `bars` here are the sample's clicks per interval, so they already add up to `clicks`. */
 export const REPORTS: Record<Range, Report> = {
-  "24h": sampleReport(24, { ctr: 2.1, geo: "TH", change: 8.2 }),
-  "7d": sampleReport(168, { ctr: 3.4, geo: "TH", change: 14.8 }),
-  "30d": sampleReport(720, { ctr: 3.8, geo: "TH", change: 22.4 }),
+  "24h": sampleReport("24h", { ctr: 2.1, geo: "TH" }),
+  "7d": sampleReport("7d", { ctr: 3.4, geo: "TH" }),
+  "30d": sampleReport("30d", { ctr: 3.8, geo: "TH" }),
 };
+
+/**
+ * `bars` on the 0-100 scale MCP clients had before the shared sample (each interval relative to the busiest one),
+ * so a client that draws them as heights keeps working; the clicks themselves are in `intervals`.
+ */
+export function relativeBars(bars: number[]): number[] {
+  const top = Math.max(0, ...bars);
+  return bars.map((bar) => (top > 0 ? Math.round((bar / top) * 100) : 0));
+}
 
 export const ROWS: LinkRow[] = [
   { name: "/go/github", destination: "https://github.com/bookchaowalit", share: 48, status: "active" },
@@ -125,11 +156,11 @@ export function reportCsv(range: Range, rows: LinkRow[] = ROWS, reports: Record<
   return lines.map((line) => line.map(csvCell).join(",")).join("\n") + "\n";
 }
 
-const RANGE_HOURS: Record<Range, number> = { "24h": 24, "7d": 168, "30d": 720 };
 
-function formatAgo(hours: number): string {
+/** How long ago, in one unit per period like the axis: hours for the last 24 hours, days otherwise. */
+function formatAgo(hours: number, range: Range): string {
   if (hours <= 0) return "now";
-  if (hours < 48) return `−${Number(hours.toFixed(1))}h`;
+  if (range === "24h") return `−${Number(hours.toFixed(1))}h`;
   return `−${Number((hours / 24).toFixed(1))}d`;
 }
 
@@ -150,7 +181,7 @@ export function chartRows(range: Range, reports: Record<Range, Report> = REPORTS
   const step = RANGE_HOURS[range] / report.bars.length;
   return clicks.map((count, index) => {
     const from = RANGE_HOURS[range] - index * step;
-    return { label: `${formatAgo(from)} to ${formatAgo(from - step)}`, clicks: count };
+    return { label: `${formatAgo(from, range)} to ${formatAgo(from - step, range)}`, clicks: count };
   });
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handleRpc, TOOL_NAME } from "@/lib/mcp";
 import { POST } from "@/app/api/mcp/route";
-import { REPORTS, chartRows, reportCsv, rowsForRange } from "@/lib/report";
+import { REPORTS, chartRows, relativeBars, reportCsv, rowsForRange } from "@/lib/report";
 
 const app = { name: "Test App", description: "A test", url: "https://example.test" };
 
@@ -50,7 +50,10 @@ describe("MCP route", () => {
     expect(report).toMatchObject({ range: "30d", sample: true, clicks: REPORTS["30d"].clicks });
     expect(report.rows).toEqual(rowsForRange("30d"));
     expect(report.intervals).toEqual(chartRows("30d"));
-    expect(report.bars).toEqual(REPORTS["30d"].bars);
+    // bars keep the 0-100 relative scale older clients draw as heights; the clicks are in intervals.
+    expect(report.bars).toEqual(relativeBars(REPORTS["30d"].bars));
+    expect(Math.max(...report.bars)).toBe(100);
+    expect(report.change).toBe(REPORTS["30d"].change);
   });
 
   it("keeps the links field in get_report for every range, equal to the number of short links shown", async () => {

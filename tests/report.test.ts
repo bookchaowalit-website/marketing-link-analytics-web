@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { axisTicks, bucketClicks, chartExtremes, chartRows, csvCell, formatChange, hasNoChartData, hasNoClicks, RANGES, regionName, REPORTS, reportCsv, rowsForRange, hasBreakdown } from "@/lib/report";
+import { axisTicks, bucketClicks, chartExtremes, chartRows, csvCell, formatChange, hasNoChartData, hasNoClicks, RANGES, regionName, REPORTS, reportCsv, rowsForRange, hasBreakdown, percentChange, relativeBars } from "@/lib/report";
 
 describe("rowsForRange", () => {
   it("always adds up to the headline click count", () => {
@@ -69,16 +69,27 @@ describe("chartRows", () => {
 
   it("cuts every period from the same sample, so nested periods agree (Codex 2026-11-19)", () => {
     // Totals are sums of the same hours: the day sits inside the week, the week inside the month.
-    expect(REPORTS["24h"].clicks).toBe(1204);
-    expect(REPORTS["7d"].clicks).toBe(8420);
-    expect(REPORTS["30d"].clicks).toBe(31840);
+    expect([REPORTS["24h"].clicks, REPORTS["7d"].clicks, REPORTS["30d"].clicks]).toEqual([1204, 8420, 31840]);
+    // 24 hours: 12 two-hour bars; 7 days: 7 daily bars; 30 days: 10 three-day bars.
+    expect([chartRows("24h").length, chartRows("7d").length, chartRows("30d").length]).toEqual([12, 7, 10]);
+    const week = chartRows("7d").map((row) => row.clicks);
+    expect(week.at(-1)).toBe(REPORTS["24h"].clicks);
     const month = chartRows("30d").map((row) => row.clicks);
-    // The month's last two intervals cover 5 days, so they hold fewer clicks than the 7-day period.
-    expect(month.at(-1)! + month.at(-2)!).toBeLessThan(REPORTS["7d"].clicks);
-    expect(month.at(-1)!).toBeGreaterThanOrEqual(REPORTS["24h"].clicks);
-    // The week's last 14-hour interval is the 24 hours' last 14 hours.
-    const day = chartRows("24h").map((row) => row.clicks);
-    expect(chartRows("7d").at(-1)!.clicks).toBe(day.slice(-7).reduce((sum, n) => sum + n, 0));
+    expect(month.at(-1)! + month.at(-2)!).toBe(week.slice(1).reduce((sum, n) => sum + n, 0));
+  });
+
+  it("computes change from the period of the same length just before, in the same sample", () => {
+    // 24h: 1,204 against 1,256 the day before; 7d: 8,420 against 7,764; 30d: 31,840 against the 30 days before.
+    expect(REPORTS["24h"].change).toBe(-4.1);
+    expect(REPORTS["7d"].change).toBe(8.4);
+    expect(REPORTS["30d"].change).toBe(27);
+    expect(percentChange(5, 0)).toBeNaN();
+  });
+
+  it("keeps MCP bars on the old 0-100 relative scale", () => {
+    expect(relativeBars([50, 100, 25])).toEqual([50, 100, 25]);
+    expect(relativeBars([1150, 1256])).toEqual([92, 100]);
+    expect(relativeBars([0, 0])).toEqual([0, 0]);
   });
 
   it("adds up to the Clicks stat in every period", () => {
@@ -86,8 +97,9 @@ describe("chartRows", () => {
   });
 
   it("switches to days for longer windows", () => {
-    expect(chartRows("30d")[0].label).toBe("−30d to −27.5d");
-    expect(chartRows("7d").at(-1)?.label).toBe("−14h to now");
+    expect(chartRows("30d")[0].label).toBe("−30d to −27d");
+    expect(chartRows("7d").at(-1)?.label).toBe("−1d to now");
+    expect(chartRows("7d").map((row) => row.label)[0]).toBe("−7d to −6d");
   });
 });
 
@@ -124,7 +136,7 @@ describe("hasNoClicks and hasNoChartData", () => {
 
 describe("chartExtremes", () => {
   it("names the quietest and busiest intervals, first one on a tie, and null with no intervals", () => {
-    expect(chartExtremes("7d")).toEqual({ low: { label: "−5.3d to −4.7d", clicks: 449 }, high: { label: "−42h to −28h", clicks: 998 } });
+    expect(chartExtremes("7d")).toEqual({ low: { label: "−7d to −6d", clicks: 1150 }, high: { label: "−2d to −1d", clicks: 1256 } });
     const tie = { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [5, 9, 5, 9] } };
     expect(chartExtremes("24h", tie)).toEqual({ low: { label: "−24h to −18h", clicks: 215 }, high: { label: "−18h to −12h", clicks: 387 } });
     expect(chartExtremes("24h", { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [] } })).toBeNull();

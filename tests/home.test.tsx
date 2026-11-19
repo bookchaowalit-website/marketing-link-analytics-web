@@ -44,16 +44,16 @@ describe("link analytics page", () => {
   it("opens on 7 days with the headline figures and the sample notice", () => {
     expect(host.querySelector("h1")?.textContent).toBe("Link clicks");
     expect(button("7 days").getAttribute("aria-pressed")).toBe("true");
-    expect(stats()).toEqual(["Clicks8,420+14.8% on the period before", "Short links3in the sample set", "Click rate3.4%clicks per view, estimated", "Top regionThailandTH · by clicks"]);
+    expect(stats()).toEqual(["Clicks8,420+8.4% on the period before", "Short links3in the sample set", "Click rate3.4%clicks per view, estimated", "Top regionThailandTH · by clicks"]);
     // The top bar counts the links with the same number and words as the stat tile.
     expect(host.querySelector(".ds-top")?.textContent).toContain("3 sample short links");
     expect(host.querySelector(".ds-pill")?.textContent).toBe("Sample data");
     expect(host.textContent).toContain("No backend is connected");
     // The chart's text names the low and high intervals it draws, not only the count and trend.
-    expect(host.querySelector("svg")?.getAttribute("aria-label")).toBe("Illustrative clicks for the last 7 days, 12 intervals: lowest 449 (−5.3d to −4.7d), highest 998 (−42h to −28h); trending +14.8%.");
+    expect(host.querySelector("svg")?.getAttribute("aria-label")).toBe("Illustrative clicks for the last 7 days, 7 intervals: lowest 1,150 (−7d to −6d), highest 1,256 (−2d to −1d); trending +8.4%.");
     // The chart is in clicks, says so on its own axis, and its intervals add up to the Clicks stat.
     expect(host.querySelector(".ds-chart-unit")?.textContent).toBe("clicks");
-    expect(host.querySelector(".ds-chart-peak-row")?.textContent).toBe("Peak 998 clicks · −42h to −28h");
+    expect(host.querySelector(".ds-chart-peak-row")?.textContent).toBe("Peak 1256 clicks · −2d to −1d");
     expect(host.querySelector(".ds-chart-panel")?.textContent).toContain("Last 7 days · clicks per interval, 8,420 in all");
     // The links the visitor picks from come first in the DOM (so on phones and in Tab order), in the narrow column on wide screens.
     expect(host.querySelector(".ds-grid.ds-grid-narrow-first > section:first-child #links-heading")).not.toBeNull();
@@ -68,19 +68,19 @@ describe("link analytics page", () => {
 
   it("switches the period, the axis ends and the chart table", () => {
     press(button("30 days"));
-    expect(stats()[0]).toBe("Clicks31,840+22.4% on the period before");
-    expect([...host.querySelectorAll(".ds-chart-x span")].map((span) => span.textContent)).toEqual(["−30d", "−22.5d", "−15d", "−7.5d", "now"]);
-    // 12 intervals: the last point (−2.5d to now) sits at its interval's centre, not on "now".
+    expect(stats()[0]).toBe("Clicks31,840+27.0% on the period before");
+    // Ticks sit on three-day interval edges.
+    expect([...host.querySelectorAll<HTMLElement>(".ds-chart-x span")].map((span) => [span.textContent, span.style.left])).toEqual([["−30d", "0%"], ["−21d", "30%"], ["−15d", "50%"], ["−6d", "80%"], ["now", "100%"]]);
+    // 10 three-day intervals: the last point (−3d to now) sits at its interval's centre, not on "now".
     const last = (host.querySelector(".ds-chart-line")?.getAttribute("points") ?? "").split(" ").at(-1);
-    expect(Number(last?.split(",")[0])).toBeCloseTo((11.5 / 12) * 1000);
-    expect([...host.querySelectorAll<HTMLElement>(".ds-chart-x span")].map((span) => span.style.left)).toEqual(["0%", "25%", "50%", "75%", "100%"]);
+    expect(Number(last?.split(",")[0])).toBeCloseTo((9.5 / 10) * 1000);
     const details = host.querySelector("details.ds-chart-switch") as HTMLDetailsElement;
     press(details.querySelector("summary") as HTMLElement);
     expect(details.open).toBe(true);
     const rows = host.querySelectorAll("tbody tr");
-    expect(rows).toHaveLength(12);
-    expect(rows[11].textContent).toBe("−2.5d to now3175 (peak)");
-    expect(rows[0].textContent).toBe("−30d to −27.5d2186");
+    expect(rows).toHaveLength(10);
+    expect(rows[9].textContent).toBe("−3d to now3670 (peak)");
+    expect(rows[0].textContent).toBe("−30d to −27d2731");
   });
 
   it("selects a link, explains it, and clears it on a second press", () => {
