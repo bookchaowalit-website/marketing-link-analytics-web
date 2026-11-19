@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChartPanel, DashFoot, DashTop, Pill, Segmented, Stat } from "@/components/dashboard-shell";
-import { AXIS_START, chartExtremes, chartRows, formatChange, formatCount, hasNoChartData, hasNoClicks, RANGES, reportCsv, rowsForRange, type LinkRow, type Range, type Report } from "@/lib/report";
+import { axisTicks, chartExtremes, chartRows, formatChange, formatCount, hasNoChartData, hasNoClicks, RANGES, regionName, reportCsv, rowsForRange, type LinkRow, type Range, type Report } from "@/lib/report";
 
 const RANGE_LABELS: Record<Range, string> = { "24h": "24 hours", "7d": "7 days", "30d": "30 days" };
 const PERIODS = RANGES.map((id) => ({ id, label: RANGE_LABELS[id] }));
@@ -20,7 +20,10 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
   const noClicks = hasNoClicks(report);
   const noChart = noClicks || hasNoChartData(report);
   const extremes = chartExtremes(range, reports);
-  const extremesText = extremes ? `: lowest ${extremes.low.volume} (${extremes.low.label}), highest ${extremes.high.volume} (${extremes.high.label})` : "";
+  const extremesText = extremes ? `: lowest ${formatCount(extremes.low.clicks)} (${extremes.low.label}), highest ${formatCount(extremes.high.clicks)} (${extremes.high.label})` : "";
+  const axis = axisTicks(range, intervals.length);
+  // The top bar and the stat tile count the same thing: the short links in this set.
+  const linkCount = `${links.length} sample short ${links.length === 1 ? "link" : "links"}`;
 
   const downloadCsv = () => {
     const url = URL.createObjectURL(new Blob([reportCsv(range, links, reports)], { type: "text/csv" }));
@@ -34,7 +37,7 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
   return (
     <div className="ds">
       <a className="ds-skip" href="#main">Skip to content</a>
-      <DashTop name="Link analytics" tagline="Three sample short links" />
+      <DashTop name="Link analytics" tagline={linkCount} />
 
       <main id="main" tabIndex={-1} className="ds-main">
         <div className="ds-head">
@@ -47,9 +50,9 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
 
         <ul className="ds-stats" aria-label={`Last ${period} at a glance`}>
           <Stat label="Clicks" value={formatCount(report.clicks)} note={`${formatChange(report.change)} on the period before`} />
-          <Stat label="Live links" value={noLinks ? 0 : report.links} note="in the sample set" />
-          <Stat label="Click rate" value={`${report.ctr.toFixed(1)}%`} note="estimated" />
-          <Stat label="Top region" value={noClicks ? "—" : report.geo} note={noClicks ? "no clicks yet" : "by clicks"} />
+          <Stat label="Short links" value={links.length} note="in the sample set" />
+          <Stat label="Click rate" value={`${report.ctr.toFixed(1)}%`} note="clicks per view, estimated" />
+          <Stat label="Top region" value={noClicks ? "—" : regionName(report.geo)} note={noClicks ? "no clicks yet" : `${report.geo.toUpperCase()} · by clicks`} />
         </ul>
 
         <div className="ds-grid">
@@ -76,27 +79,28 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
           ) : (
             <ChartPanel
               title="Click volume"
-              subtitle={`Last ${period}, relative volume on a 0–100 scale`}
-              summary={`Illustrative click volume for the last ${period}, ${report.bars.length} intervals${extremesText}; trending ${formatChange(report.change)}.`}
-              values={report.bars}
+              subtitle={`Last ${period} · clicks per interval, ${formatCount(report.clicks)} in all`}
+              summary={`Illustrative clicks for the last ${period}, ${intervals.length} intervals${extremesText}; trending ${formatChange(report.change)}.`}
+              values={intervals.map((row) => row.clicks)}
               labels={intervals.map((row) => row.label)}
-              // Each bar counts one interval, so its point sits at the interval's centre; "−7d" and "now" mark the edges.
-              ticks={[0, report.bars.length]}
-              tickLabels={[AXIS_START[range], "now"]}
+              // Each point counts one interval, so it sits at the interval's centre; the ticks mark interval edges.
+              ticks={axis.ticks}
+              tickLabels={axis.labels}
               buckets
-              max={100}
-              unit="Relative volume, %"
+              max={Math.max(...intervals.map((row) => row.clicks))}
+              unit="Clicks"
+              yUnit="clicks"
               labelHeading="Interval"
             />
           )}
 
-          <section className="ds-panel" aria-labelledby="links-heading">
+          <section className="ds-panel ds-phone-first" aria-labelledby="links-heading">
             <div className="ds-panel-head">
               <div>
                 <h2 id="links-heading">Short links</h2>
                 <p>Clicks and share of the period</p>
               </div>
-              {noLinks ? null : <button type="button" className="ds-plain" onClick={downloadCsv}>Download CSV</button>}
+              {noLinks ? null : <button type="button" className="ds-plain" onClick={downloadCsv}>Download CSV ({period})</button>}
             </div>
             {noLinks ? (
               <p className="ds-callout" role="status">

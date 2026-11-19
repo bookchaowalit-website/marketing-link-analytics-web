@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartExtremes, chartRows, csvCell, formatChange, hasNoChartData, hasNoClicks, RANGES, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
+import { axisTicks, bucketClicks, chartExtremes, chartRows, csvCell, formatChange, hasNoChartData, hasNoClicks, RANGES, regionName, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
 
 describe("rowsForRange", () => {
   it("always adds up to the headline click count", () => {
@@ -63,7 +63,12 @@ describe("chartRows", () => {
     expect(rows).toHaveLength(REPORTS["24h"].bars.length);
     expect(rows[0].label).toBe("−24h to −22h");
     expect(rows.at(-1)?.label).toBe("−2h to now");
-    expect(rows.map((row) => row.volume)).toEqual(REPORTS["24h"].bars);
+    // Whole clicks per interval that add up to the period's clicks, in the shape of the interval weights.
+    expect(rows.map((row) => row.clicks)).toEqual([42, 66, 50, 84, 73, 117, 94, 136, 111, 143, 129, 159]);
+  });
+
+  it("adds up to the Clicks stat in every period", () => {
+    for (const range of RANGES) expect(chartRows(range).reduce((sum, row) => sum + row.clicks, 0)).toBe(REPORTS[range].clicks);
   });
 
   it("switches to days for longer windows", () => {
@@ -105,9 +110,37 @@ describe("hasNoClicks and hasNoChartData", () => {
 
 describe("chartExtremes", () => {
   it("names the quietest and busiest intervals, first one on a tie, and null with no intervals", () => {
-    expect(chartExtremes("7d")).toEqual({ low: { label: "−7d to −6.4d", volume: 32 }, high: { label: "−14h to now", volume: 92 } });
+    expect(chartExtremes("7d")).toEqual({ low: { label: "−7d to −6.4d", clicks: 370 }, high: { label: "−14h to now", clicks: 1064 } });
     const tie = { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [5, 9, 5, 9] } };
-    expect(chartExtremes("24h", tie)).toEqual({ low: { label: "−24h to −18h", volume: 5 }, high: { label: "−18h to −12h", volume: 9 } });
+    expect(chartExtremes("24h", tie)).toEqual({ low: { label: "−24h to −18h", clicks: 215 }, high: { label: "−18h to −12h", clicks: 387 } });
     expect(chartExtremes("24h", { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [] } })).toBeNull();
+  });
+});
+
+describe("bucketClicks", () => {
+  it("gives every interval zero when there is no interval split", () => {
+    expect(bucketClicks({ ...REPORTS["7d"], bars: [0, 0, 0] })).toEqual([0, 0, 0]);
+    expect(bucketClicks({ ...REPORTS["7d"], clicks: 10, bars: [1, 1] })).toEqual([5, 5]);
+  });
+});
+
+describe("axisTicks", () => {
+  it("marks the start, the quarters and now in one unit per axis", () => {
+    expect(axisTicks("24h", 12)).toEqual({ ticks: [0, 3, 6, 9, 12], labels: ["−24h", "−18h", "−12h", "−6h", "now"] });
+    expect(axisTicks("7d", 12).labels).toEqual(["−7d", "−5.3d", "−3.5d", "−1.8d", "now"]);
+    expect(axisTicks("30d", 12).labels).toEqual(["−30d", "−22.5d", "−15d", "−7.5d", "now"]);
+  });
+
+  it("never puts two ticks on one edge", () => {
+    expect(axisTicks("7d", 2).ticks).toEqual([0, 1, 2]);
+    expect(axisTicks("7d", 0)).toEqual({ ticks: [0], labels: ["−7d"] });
+  });
+});
+
+describe("regionName", () => {
+  it("names known region codes and keeps unknown ones", () => {
+    expect(regionName("TH")).toBe("Thailand");
+    expect(regionName("th")).toBe("Thailand");
+    expect(regionName("ZZ")).toBe("ZZ");
   });
 });

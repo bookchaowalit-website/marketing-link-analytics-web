@@ -17,7 +17,7 @@ A portfolio visitor looking at how a small analytics report could read; not some
 
 1. Switch the window between 24h, 7d and 30d; KPI cards, chart and table follow.
 2. The link table splits the window's clicks by share (largest remainder), so rows always add up to the headline.
-3. "Show table" lists every interval and its relative volume; selecting a link shows its real destination.
+3. "Show table" lists every interval and its clicks (they add up to the Clicks stat); selecting a link shows its real destination.
 4. Download the sample table as CSV (cells with commas, quotes or line breaks are quoted).
 5. `/api/mcp` answers JSON-RPC: `get_app_info`, `get_report` (range 24h/7d/30d, default 7d, marked `sample: true`) and
    `get_report_csv` return the same sample data the page shows; an unknown range, tool or method is a JSON-RPC error.

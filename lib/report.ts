@@ -1,14 +1,18 @@
 export type Range = "24h" | "7d" | "30d";
 export const RANGES: Range[] = ["24h", "7d", "30d"];
 
-export type Report = { clicks: number; links: number; ctr: number; geo: string; change: number; bars: number[] };
+/**
+ * `bars` are the relative weights of each interval (oldest first); the chart turns them into whole clicks per interval
+ * that add up to `clicks`. `geo` is an ISO 3166-1 alpha-2 region code; `ctr` is clicks per view, in percent.
+ */
+export type Report = { clicks: number; ctr: number; geo: string; change: number; bars: number[] };
 export type LinkRow = { name: string; destination: string; share: number; status: "active" | "quiet" };
 
 /** Illustrative sample figures; nothing here is measured. */
 export const REPORTS: Record<Range, Report> = {
-  "24h": { clicks: 1204, links: 8, ctr: 2.1, geo: "TH", change: 8.2, bars: [24, 38, 29, 48, 42, 67, 54, 78, 64, 82, 74, 91] },
-  "7d": { clicks: 8420, links: 24, ctr: 3.4, geo: "TH", change: 14.8, bars: [32, 46, 40, 54, 48, 68, 58, 74, 62, 84, 70, 92] },
-  "30d": { clicks: 31840, links: 31, ctr: 3.8, geo: "TH", change: 22.4, bars: [22, 31, 38, 34, 52, 46, 61, 58, 76, 69, 88, 96] },
+  "24h": { clicks: 1204, ctr: 2.1, geo: "TH", change: 8.2, bars: [24, 38, 29, 48, 42, 67, 54, 78, 64, 82, 74, 91] },
+  "7d": { clicks: 8420, ctr: 3.4, geo: "TH", change: 14.8, bars: [32, 46, 40, 54, 48, 68, 58, 74, 62, 84, 70, 92] },
+  "30d": { clicks: 31840, ctr: 3.8, geo: "TH", change: 22.4, bars: [22, 31, 38, 34, 52, 46, 61, 58, 76, 69, 88, 96] },
 };
 
 export const ROWS: LinkRow[] = [
@@ -16,8 +20,6 @@ export const ROWS: LinkRow[] = [
   { name: "/go/resume", destination: "https://bookchaowalit.com/about", share: 37, status: "active" },
   { name: "/go/notes", destination: "https://bookchaowalit.com/knowledge", share: 15, status: "quiet" },
 ];
-
-export const AXIS_START: Record<Range, string> = { "24h": "−24h", "7d": "−7d", "30d": "−30d" };
 
 /** `share` here is the percent of the clicks actually given to this row (whole numbers that add up to 100). */
 export type RowWithClicks = LinkRow & { clicks: number };
@@ -91,25 +93,49 @@ function formatAgo(hours: number): string {
   return `−${Number((hours / 24).toFixed(1))}d`;
 }
 
-export type ChartRow = { label: string; volume: number };
+export type ChartRow = { label: string; clicks: number };
+
+/** Whole clicks per interval, oldest first: the period's clicks split by the interval weights, so they add up to `clicks`. */
+export function bucketClicks(report: Report): number[] {
+  return hasNoChartData(report) ? report.bars.map(() => 0) : splitWhole(report.clicks, report.bars);
+}
 
 /**
- * Text alternative for the bar chart: one row per interval, oldest first, with
- * the bar's relative volume (percent of the chart's scale, not a click count).
+ * Text alternative for the chart: one row per interval, oldest first, with
+ * the clicks counted in it (the rows add up to the period's clicks).
  */
 export function chartRows(range: Range, reports: Record<Range, Report> = REPORTS): ChartRow[] {
-  const bars = reports[range].bars;
-  const step = RANGE_HOURS[range] / bars.length;
-  return bars.map((volume, index) => {
+  const report = reports[range];
+  const clicks = bucketClicks(report);
+  const step = RANGE_HOURS[range] / report.bars.length;
+  return clicks.map((count, index) => {
     const from = RANGE_HOURS[range] - index * step;
-    return { label: `${formatAgo(from)} to ${formatAgo(from - step)}`, volume };
+    return { label: `${formatAgo(from)} to ${formatAgo(from - step)}`, clicks: count };
   });
+}
+
+/**
+ * Five x-axis ticks on interval edges (start, quarters, now) for `count` intervals, with how long ago each edge is.
+ * Fewer intervals give fewer ticks, never two on the same edge.
+ */
+export function axisTicks(range: Range, count: number): { ticks: number[]; labels: string[] } {
+  const ticks = [...new Set([0, 0.25, 0.5, 0.75, 1].map((part) => Math.round(part * count)))];
+  // One unit per axis (hours for a day, days otherwise), so a 7-day axis never mixes "−42h" in with days.
+  const ago = (hours: number) => (hours <= 0 ? "now" : range === "24h" ? `−${Number(hours.toFixed(1))}h` : `−${Number((hours / 24).toFixed(1))}d`);
+  return { ticks, labels: ticks.map((tick) => ago(RANGE_HOURS[range] * (1 - tick / Math.max(count, 1)))) };
+}
+
+const REGION_NAMES: Record<string, string> = { TH: "Thailand" };
+
+/** The full name of a region code ("TH" → "Thailand"); unknown codes come back as given. */
+export function regionName(code: string): string {
+  return REGION_NAMES[code.toUpperCase()] ?? code;
 }
 
 /** The quietest and busiest intervals (first one on a tie), for the chart's text summary; null with no intervals. */
 export function chartExtremes(range: Range, reports: Record<Range, Report> = REPORTS): { low: ChartRow; high: ChartRow } | null {
   const rows = chartRows(range, reports);
   if (rows.length === 0) return null;
-  const pick = (better: (a: number, b: number) => boolean) => rows.reduce((best, row) => (better(row.volume, best.volume) ? row : best));
+  const pick = (better: (a: number, b: number) => boolean) => rows.reduce((best, row) => (better(row.clicks, best.clicks) ? row : best));
   return { low: pick((a, b) => a < b), high: pick((a, b) => a > b) };
 }
