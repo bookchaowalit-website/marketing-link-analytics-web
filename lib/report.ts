@@ -2,17 +2,41 @@ export type Range = "24h" | "7d" | "30d";
 export const RANGES: Range[] = ["24h", "7d", "30d"];
 
 /**
- * `bars` are the relative weights of each interval (oldest first); the chart turns them into whole clicks per interval
+ * `bars` are the relative weight of each interval (oldest first; the sample's are its clicks); the chart turns them into whole clicks per interval
  * that add up to `clicks`. `geo` is an ISO 3166-1 alpha-2 region code; `ctr` is clicks per view, in percent.
  */
 export type Report = { clicks: number; ctr: number; geo: string; change: number; bars: number[] };
 export type LinkRow = { name: string; destination: string; share: number; status: "active" | "quiet" };
 
-/** Illustrative sample figures; nothing here is measured. */
+/**
+ * One illustrative sample (nothing here is measured): clicks per day for the last 30 days, oldest first, each day
+ * split into 24 hours by a fixed daily profile. Every period is cut from these same hours, so nested periods agree:
+ * the last 24 hours are the last day, the 7 days hold that day, and the 30 days hold both.
+ */
+const SAMPLE_DAYS = [
+  900, 910, 921, 931, 942, 952, 963, 973, 984, 994, 1005, 1015, 1026, 1036, 1047, 1057, 1068, 1078, 1089, 1099, 1110,
+  1120, 1200, 1150, 1180, 1190, 1230, 1210, 1256, 1204,
+];
+const HOUR_PROFILE = [2, 1, 1, 1, 1, 2, 3, 5, 6, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 4, 4, 3, 2];
+const SAMPLE_HOURS = SAMPLE_DAYS.flatMap((day) => splitWhole(day, HOUR_PROFILE));
+
+/** The last `hours` of the sample in 12 equal intervals, as whole clicks per interval (oldest first). */
+function sampleBars(hours: number): number[] {
+  const window = SAMPLE_HOURS.slice(-hours);
+  const step = hours / 12;
+  return Array.from({ length: 12 }, (_, i) => window.slice(i * step, (i + 1) * step).reduce((sum, n) => sum + n, 0));
+}
+
+function sampleReport(hours: number, rest: Omit<Report, "clicks" | "bars">): Report {
+  const bars = sampleBars(hours);
+  return { ...rest, clicks: bars.reduce((sum, n) => sum + n, 0), bars };
+}
+
+/** `bars` here are the sample's clicks per interval, so they already add up to `clicks`. */
 export const REPORTS: Record<Range, Report> = {
-  "24h": { clicks: 1204, ctr: 2.1, geo: "TH", change: 8.2, bars: [24, 38, 29, 48, 42, 67, 54, 78, 64, 82, 74, 91] },
-  "7d": { clicks: 8420, ctr: 3.4, geo: "TH", change: 14.8, bars: [32, 46, 40, 54, 48, 68, 58, 74, 62, 84, 70, 92] },
-  "30d": { clicks: 31840, ctr: 3.8, geo: "TH", change: 22.4, bars: [22, 31, 38, 34, 52, 46, 61, 58, 76, 69, 88, 96] },
+  "24h": sampleReport(24, { ctr: 2.1, geo: "TH", change: 8.2 }),
+  "7d": sampleReport(168, { ctr: 3.4, geo: "TH", change: 14.8 }),
+  "30d": sampleReport(720, { ctr: 3.8, geo: "TH", change: 22.4 }),
 };
 
 export const ROWS: LinkRow[] = [

@@ -22,7 +22,7 @@ function rangeOf(args: Record<string, unknown>): Range | { error: string } {
 const TOOLS: DataTool[] = [
   {
     name: "get_report",
-    description: "Sample click report for a range (24h, 7d, 30d): headline figures (clicks, links = number of short links, ctr, geo, change, bars = relative weights), intervals = whole clicks per interval as the chart shows them, and per-link rows. Illustrative data, not measured.",
+    description: "Sample click report for a range (24h, 7d, 30d): headline figures (clicks, links = number of short links, ctr, geo, change, bars = clicks per interval), intervals = the same clicks with their time labels, and per-link rows. Every range is cut from one illustrative sample, so nested ranges agree; not measured.",
     inputSchema: rangeSchema,
     call: (args) => {
       const range = rangeOf(args);

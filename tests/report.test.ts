@@ -63,8 +63,22 @@ describe("chartRows", () => {
     expect(rows).toHaveLength(REPORTS["24h"].bars.length);
     expect(rows[0].label).toBe("−24h to −22h");
     expect(rows.at(-1)?.label).toBe("−2h to now");
-    // Whole clicks per interval that add up to the period's clicks, in the shape of the interval weights.
-    expect(rows.map((row) => row.clicks)).toEqual([42, 66, 50, 84, 73, 117, 94, 136, 111, 143, 129, 159]);
+    // The last day of the shared sample, two hours per interval (quiet at night, busy in the day).
+    expect(rows.map((row) => row.clicks)).toEqual([35, 24, 35, 94, 152, 152, 152, 152, 140, 116, 94, 58]);
+  });
+
+  it("cuts every period from the same sample, so nested periods agree (Codex 2026-11-19)", () => {
+    // Totals are sums of the same hours: the day sits inside the week, the week inside the month.
+    expect(REPORTS["24h"].clicks).toBe(1204);
+    expect(REPORTS["7d"].clicks).toBe(8420);
+    expect(REPORTS["30d"].clicks).toBe(31840);
+    const month = chartRows("30d").map((row) => row.clicks);
+    // The month's last two intervals cover 5 days, so they hold fewer clicks than the 7-day period.
+    expect(month.at(-1)! + month.at(-2)!).toBeLessThan(REPORTS["7d"].clicks);
+    expect(month.at(-1)!).toBeGreaterThanOrEqual(REPORTS["24h"].clicks);
+    // The week's last 14-hour interval is the 24 hours' last 14 hours.
+    const day = chartRows("24h").map((row) => row.clicks);
+    expect(chartRows("7d").at(-1)!.clicks).toBe(day.slice(-7).reduce((sum, n) => sum + n, 0));
   });
 
   it("adds up to the Clicks stat in every period", () => {
@@ -110,7 +124,7 @@ describe("hasNoClicks and hasNoChartData", () => {
 
 describe("chartExtremes", () => {
   it("names the quietest and busiest intervals, first one on a tie, and null with no intervals", () => {
-    expect(chartExtremes("7d")).toEqual({ low: { label: "−7d to −6.4d", clicks: 370 }, high: { label: "−14h to now", clicks: 1064 } });
+    expect(chartExtremes("7d")).toEqual({ low: { label: "−5.3d to −4.7d", clicks: 449 }, high: { label: "−42h to −28h", clicks: 998 } });
     const tie = { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [5, 9, 5, 9] } };
     expect(chartExtremes("24h", tie)).toEqual({ low: { label: "−24h to −18h", clicks: 215 }, high: { label: "−18h to −12h", clicks: 387 } });
     expect(chartExtremes("24h", { ...REPORTS, "24h": { ...REPORTS["24h"], bars: [] } })).toBeNull();

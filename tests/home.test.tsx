@@ -50,10 +50,10 @@ describe("link analytics page", () => {
     expect(host.querySelector(".ds-pill")?.textContent).toBe("Sample data");
     expect(host.textContent).toContain("No backend is connected");
     // The chart's text names the low and high intervals it draws, not only the count and trend.
-    expect(host.querySelector("svg")?.getAttribute("aria-label")).toBe("Illustrative clicks for the last 7 days, 12 intervals: lowest 370 (−7d to −6.4d), highest 1,064 (−14h to now); trending +14.8%.");
+    expect(host.querySelector("svg")?.getAttribute("aria-label")).toBe("Illustrative clicks for the last 7 days, 12 intervals: lowest 449 (−5.3d to −4.7d), highest 998 (−42h to −28h); trending +14.8%.");
     // The chart is in clicks, says so on its own axis, and its intervals add up to the Clicks stat.
     expect(host.querySelector(".ds-chart-unit")?.textContent).toBe("clicks");
-    expect(host.querySelector(".ds-chart-peak-row")?.textContent).toBe("Peak 1064 clicks · −14h to now");
+    expect(host.querySelector(".ds-chart-peak-row")?.textContent).toBe("Peak 998 clicks · −42h to −28h");
     expect(host.querySelector(".ds-chart-panel")?.textContent).toContain("Last 7 days · clicks per interval, 8,420 in all");
     // The links the visitor picks from come first in the DOM (so on phones and in Tab order), in the narrow column on wide screens.
     expect(host.querySelector(".ds-grid.ds-grid-narrow-first > section:first-child #links-heading")).not.toBeNull();
@@ -79,8 +79,8 @@ describe("link analytics page", () => {
     expect(details.open).toBe(true);
     const rows = host.querySelectorAll("tbody tr");
     expect(rows).toHaveLength(12);
-    expect(rows[11].textContent).toBe("−2.5d to now4555 (peak)");
-    expect(rows[0].textContent).toBe("−30d to −27.5d1044");
+    expect(rows[11].textContent).toBe("−2.5d to now3175 (peak)");
+    expect(rows[0].textContent).toBe("−30d to −27.5d2186");
   });
 
   it("selects a link, explains it, and clears it on a second press", () => {
