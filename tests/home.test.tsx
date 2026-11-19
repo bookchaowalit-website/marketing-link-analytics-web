@@ -28,6 +28,17 @@ afterEach(() => {
 });
 
 describe("link analytics page", () => {
+  it("gives each row's status dot and share bar the same tone from its status", () => {
+    const rows = [...host.querySelectorAll(".ds-rows .ds-row")];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const dot = row.querySelector(".ds-dot")!.getAttribute("data-tone");
+      const bar = row.querySelector(".ds-meter")!.getAttribute("data-tone");
+      expect(bar).toBe(dot);
+      expect(dot).toBe(row.textContent!.includes("Active") ? "green" : "grey");
+    }
+  });
+
   it("opens on 7 days with the headline figures and the sample notice", () => {
     expect(host.querySelector("h1")?.textContent).toBe("Link clicks");
     expect(button("7 days").getAttribute("aria-pressed")).toBe("true");

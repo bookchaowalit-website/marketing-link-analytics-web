@@ -78,16 +78,20 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
             ) : (
               <>
                 <ul className="ds-rows">
-                  {rows.map((row) => (
-                    <li key={row.name}>
-                      <button type="button" className="ds-row" aria-pressed={selected === row.name} onClick={() => setSelected(selected === row.name ? null : row.name)}>
-                        <span className="ds-row-name"><span className="ds-dot" data-tone={row.status === "active" ? "green" : undefined} aria-hidden="true" />{row.name}</span>
-                        <span className="ds-row-detail">{row.status === "active" ? "Active" : "Quiet"} · {row.share}% of clicks</span>
-                        <span className="ds-row-value">{formatCount(row.clicks)}</span>
-                        <span className="ds-meter" aria-hidden="true"><span style={{ width: `${row.share}%` }} /></span>
-                      </button>
-                    </li>
-                  ))}
+                  {rows.map((row) => {
+                    // One tone per row, from its status, for both the dot and the share bar.
+                    const tone = row.status === "active" ? "green" : "grey";
+                    return (
+                      <li key={row.name}>
+                        <button type="button" className="ds-row" aria-pressed={selected === row.name} onClick={() => setSelected(selected === row.name ? null : row.name)}>
+                          <span className="ds-row-name"><span className="ds-dot" data-tone={tone} aria-hidden="true" />{row.name}</span>
+                          <span className="ds-row-detail">{row.status === "active" ? "Active" : "Quiet"} · {row.share}% of clicks</span>
+                          <span className="ds-row-value">{formatCount(row.clicks)}</span>
+                          <span className="ds-meter" data-tone={tone} aria-hidden="true"><span style={{ width: `${row.share}%` }} /></span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
                 <div className="ds-callout" aria-live="polite">
                   {highlight ? (

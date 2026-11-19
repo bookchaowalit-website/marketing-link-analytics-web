@@ -28,6 +28,13 @@ A portfolio visitor looking at how a small analytics report could read; not some
 - Nothing is measured: no click tracking, redirect endpoint, referrers, geography, devices or time-of-day data.
 - No link management, account, import or backend.
 
+## Known limits
+
+- With 5 intervals in the 24 h report, the last row of the interval table can read `−4.8h to −0h` (floating-point
+  remainder) while the chart axis says `now`.
+- The empty state for a data set with no links says "Create a short link", although this read-only report has no
+  way to create one.
+
 ## Live URL and deploy state
 
 - Live: https://link-analytics.bookchaowalit.com (HTTP 200 on 2026-11-16, Dashboard shell).
