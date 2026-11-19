@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -85,8 +87,12 @@ describe("link analytics page", () => {
     expect(callout()).toContain("Pick a link");
     press(button("/go/resume"));
     expect(button("/go/resume").getAttribute("aria-pressed")).toBe("true");
-    expect(callout()).toContain("/go/resume3,115 sample clicks (37%) in the last 7 days. Goes to bookchaowalit.com/about.");
+    expect(callout()).toContain("/go/resume3,115 sample clicks (37%) in the last 7 days. Goes to:bookchaowalit.com/about");
     expect(host.querySelector(".ds-callout a")?.getAttribute("href")).toBe("https://bookchaowalit.com/about");
+    // The destination is its own 44px tap target, not an inline word in the sentence.
+    expect(host.querySelector(".ds-callout > a.la-destination")).not.toBeNull();
+    const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+    expect(css).toMatch(/\.ds-callout a\.la-destination \{[^}]*display: inline-flex;[^}]*min-height: 44px;/);
     press(button("/go/resume"));
     expect(callout()).toContain("Pick a link");
   });

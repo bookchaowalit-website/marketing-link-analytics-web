@@ -97,7 +97,9 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
                   {highlight ? (
                     <>
                       <strong>{highlight.name}</strong>
-                      <span>{formatCount(highlight.clicks)} sample clicks ({highlight.share}%) in the last {period}. Goes to <a href={highlight.destination} target="_blank" rel="noopener noreferrer">{highlight.destination.replace(/^https:\/\//, "")}</a>.</span>
+                      <span>{formatCount(highlight.clicks)} sample clicks ({highlight.share}%) in the last {period}. Goes to:</span>
+                      {/* Its own 44px-tall target: after picking a row this link is the only way to open the destination. */}
+                      <a className="la-destination" href={highlight.destination} target="_blank" rel="noopener noreferrer">{highlight.destination.replace(/^https:\/\//, "")}</a>
                     </>
                   ) : (
                     <>

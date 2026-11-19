@@ -2,3 +2,6 @@
 @import "./dashboard-shell.css";
 
 html, body { margin: 0; background: var(--ds-bg); }
+
+/* The callout's destination link is a tap target of its own (>= 44px tall), not a 14px inline word. */
+.ds-callout a.la-destination { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; font-size: 15px; overflow-wrap: anywhere; }
