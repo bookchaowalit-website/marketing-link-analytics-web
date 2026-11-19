@@ -46,10 +46,23 @@ function splitWhole(total: number, weights: number[]): number[] {
  * so the listed percentages add up to 100 even when only some links are passed.
  */
 export function rowsForRange(range: Range, rows: LinkRow[] = ROWS, reports: Record<Range, Report> = REPORTS): RowWithClicks[] {
-  const clicks = splitWhole(reports[range].clicks, rows.map((row) => row.share));
-  // With no clicks there is nothing to divide, so the rows keep their sample weights, normalised to 100.
-  const shares = splitWhole(rows.length ? 100 : 0, clicks.some((n) => n > 0) ? clicks : rows.map((row) => row.share));
+  // Every weight 0: there is no basis to split the total, so no row is given clicks (see hasBreakdown).
+  const clicks = hasWeights(rows) ? splitWhole(reports[range].clicks, rows.map((row) => row.share)) : rows.map(() => 0);
+  // No clicks given: there is no share to show (0 here; the table and CSV say so instead of showing a weight).
+  const shares = clicks.some((n) => n > 0) ? splitWhole(100, clicks) : rows.map(() => 0);
   return rows.map((row, index) => ({ ...row, clicks: clicks[index], share: shares[index] }));
+}
+
+function hasWeights(rows: LinkRow[]): boolean {
+  return rows.some((row) => row.share > 0);
+}
+
+/**
+ * True when the period's clicks can be split per link: there are clicks and at least one link has a weight.
+ * Otherwise the table shows a note and the CSV leaves share_percent (and, without weights, clicks) empty.
+ */
+export function hasBreakdown(range: Range, rows: LinkRow[] = ROWS, reports: Record<Range, Report> = REPORTS): boolean {
+  return reports[range].clicks > 0 && hasWeights(rows);
 }
 
 /** True when the period got no clicks at all; the links, top region and chart then say so. */
@@ -81,7 +94,10 @@ export function csvCell(value: string | number): string {
 
 export function reportCsv(range: Range, rows: LinkRow[] = ROWS, reports: Record<Range, Report> = REPORTS): string {
   const lines = [["short_link", "destination", "clicks", "share_percent", "status", "range"]];
-  for (const row of rowsForRange(range, rows, reports)) lines.push([row.name, row.destination, String(row.clicks), String(row.share), row.status, range]);
+  const split = hasBreakdown(range, rows, reports);
+  // Without a split the cells stay empty rather than carrying sample weights that read like real shares.
+  const knownClicks = split || reports[range].clicks === 0;
+  for (const row of rowsForRange(range, rows, reports)) lines.push([row.name, row.destination, knownClicks ? String(row.clicks) : "", split ? String(row.share) : "", row.status, range]);
   return lines.map((line) => line.map(csvCell).join(",")).join("\n") + "\n";
 }
 

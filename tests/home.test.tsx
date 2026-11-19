@@ -144,6 +144,12 @@ describe("link analytics empty states", () => {
     expect(stats()[3]).toBe("Top regionThailandTH · by clicks");
   });
 
+  it("shows no per-link split (not weights) when every link's share is 0", () => {
+    act(() => root.render(<LinkReport reports={REPORTS} rows={ROWS.map((row) => ({ ...row, share: 0 }))} />));
+    expect(host.querySelectorAll(".ds-row")).toHaveLength(0);
+    expect(host.querySelector("#links-heading")?.closest("section")?.textContent).toContain("No per-link split for the last 7 days8,420 clicks in total, but no link carries a share, so they are not divided between links.");
+  });
+
   it("says a period had no clicks instead of drawing a flat chart, and recovers on a busy period", () => {
     act(() => root.render(<LinkReport reports={quiet} rows={ROWS} />));
     expect(host.querySelector(".ds-chart")).toBeNull();

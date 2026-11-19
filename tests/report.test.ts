@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { axisTicks, bucketClicks, chartExtremes, chartRows, csvCell, formatChange, hasNoChartData, hasNoClicks, RANGES, regionName, REPORTS, reportCsv, rowsForRange } from "@/lib/report";
+import { axisTicks, bucketClicks, chartExtremes, chartRows, csvCell, formatChange, hasNoChartData, hasNoClicks, RANGES, regionName, REPORTS, reportCsv, rowsForRange, hasBreakdown } from "@/lib/report";
 
 describe("rowsForRange", () => {
   it("always adds up to the headline click count", () => {
@@ -36,9 +36,9 @@ describe("rowsForRange", () => {
     expect(two.reduce((sum, row) => sum + row.share, 0)).toBe(100);
     // The full sample keeps its 48 / 37 / 15 split.
     for (const range of RANGES) expect(rowsForRange(range).map((row) => row.share)).toEqual([48, 37, 15]);
-    // No clicks: the weights, normalised to 100; no rows: nothing.
+    // No clicks: no share either (never the sample weights); no rows: nothing.
     const quiet = { ...REPORTS, "24h": { ...REPORTS["24h"], clicks: 0 } };
-    expect(rowsForRange("24h", [{ name: "a", destination: "x", share: 3, status: "active" }, { name: "b", destination: "x", share: 1, status: "quiet" }], quiet).map((row) => row.share)).toEqual([75, 25]);
+    expect(rowsForRange("24h", [{ name: "a", destination: "x", share: 3, status: "active" }, { name: "b", destination: "x", share: 1, status: "quiet" }], quiet).map((row) => row.share)).toEqual([0, 0]);
     expect(rowsForRange("7d", [])).toEqual([]);
   });
 });
@@ -142,5 +142,26 @@ describe("regionName", () => {
     expect(regionName("TH")).toBe("Thailand");
     expect(regionName("th")).toBe("Thailand");
     expect(regionName("ZZ")).toBe("ZZ");
+  });
+});
+
+describe("zero totals (Codex 2026-11-19)", () => {
+  const links = [
+    { name: "/go/github", destination: "https://github.com/bookchaowalit", share: 48, status: "active" as const },
+    { name: "/go/resume", destination: "https://bookchaowalit.com/about", share: 37, status: "active" as const },
+  ];
+  it("a period with no clicks exports clicks 0 and an empty share_percent, not the sample weights", () => {
+    const quiet = { ...REPORTS, "7d": { ...REPORTS["7d"], clicks: 0 } };
+    expect(hasBreakdown("7d", links, quiet)).toBe(false);
+    expect(reportCsv("7d", links, quiet).split("\n").slice(1, 3)).toEqual([
+      "/go/github,https://github.com/bookchaowalit,0,,active,7d",
+      "/go/resume,https://bookchaowalit.com/about,0,,active,7d",
+    ]);
+  });
+  it("links that all weigh 0 get no invented clicks: clicks and share_percent stay empty", () => {
+    const zero = links.map((link) => ({ ...link, share: 0 }));
+    expect(hasBreakdown("7d", zero)).toBe(false);
+    expect(rowsForRange("7d", zero).map((row) => [row.clicks, row.share])).toEqual([[0, 0], [0, 0]]);
+    expect(reportCsv("7d", zero).split("\n")[1]).toBe("/go/github,https://github.com/bookchaowalit,,,active,7d");
   });
 });

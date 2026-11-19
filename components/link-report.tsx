@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChartPanel, DashFoot, DashTop, Pill, Segmented, Stat } from "@/components/dashboard-shell";
-import { axisTicks, chartExtremes, chartRows, formatChange, formatCount, hasNoChartData, hasNoClicks, RANGES, regionName, reportCsv, rowsForRange, type LinkRow, type Range, type Report } from "@/lib/report";
+import { axisTicks, chartExtremes, chartRows, formatChange, formatCount, hasBreakdown, hasNoChartData, hasNoClicks, RANGES, regionName, reportCsv, rowsForRange, type LinkRow, type Range, type Report } from "@/lib/report";
 
 const RANGE_LABELS: Record<Range, string> = { "24h": "24 hours", "7d": "7 days", "30d": "30 days" };
 const PERIODS = RANGES.map((id) => ({ id, label: RANGE_LABELS[id] }));
@@ -18,6 +18,7 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
   const period = RANGE_LABELS[range];
   const noLinks = links.length === 0;
   const noClicks = hasNoClicks(report);
+  const noSplit = !noClicks && !hasBreakdown(range, links, reports);
   const noChart = noClicks || hasNoChartData(report);
   const extremes = chartExtremes(range, reports);
   const extremesText = extremes ? `: lowest ${formatCount(extremes.low.clicks)} (${extremes.low.label}), highest ${formatCount(extremes.high.clicks)} (${extremes.high.label})` : "";
@@ -74,6 +75,11 @@ export function LinkReport({ reports, rows: links }: { reports: Record<Range, Re
               <p className="ds-callout" role="status">
                 <strong>No clicks in the last {period}</strong>
                 <span>Your short links got no clicks in this period. Try a longer period.</span>
+              </p>
+            ) : noSplit ? (
+              <p className="ds-callout" role="status">
+                <strong>No per-link split for the last {period}</strong>
+                <span>{formatCount(report.clicks)} clicks in total, but no link carries a share, so they are not divided between links.</span>
               </p>
             ) : (
               <>
